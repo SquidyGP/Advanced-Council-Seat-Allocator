@@ -4,484 +4,226 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>National Council Seat Allocator (Advanced)</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" />
 <style>
-  :root{
-    --maxVizWidth:720px;
-    --hemicycleHeight:280px;
-    --barHeight:200px;
-    --uiGap:14px;
-    --muted:#666;
-  }
-  body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:20px; background:#f7f9fc; color:#222;}
-  h1{margin:0 0 8px}
-  h2{margin:18px 0 8px}
-  .grid{display:grid; grid-template-columns:1fr 420px; gap:18px; align-items:start;}
-  .panel{background:#fff; padding:12px; border-radius:8px; box-shadow:0 1px 3px rgba(15,15,15,0.04); border:1px solid rgba(0,0,0,0.04);}
-  table{width:100%; border-collapse:collapse; margin-top:6px;}
-  th, td{padding:6px 8px; border:1px solid #e6e9ef; font-size:13px; vertical-align:middle;}
-  input[type="number"], input[type="text"]{padding:6px; width:100%; box-sizing:border-box;}
-  input[type="color"]{height:32px; width:48px; padding:0;border:0; background:transparent; cursor:pointer;}
-  button{padding:8px 10px; border-radius:6px; border:1px solid #cfcfcf; background:#f0f0f0; cursor:pointer;}
-  button.primary{background:#2d6cdf;color:#fff;border-color:#2a63d6;}
-  .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; align-items:center}
-  pre#results{max-height:300px; overflow:auto; background:#fcfcff; padding:10px; border-radius:6px; border:1px solid #e7e9ef; white-space:pre-wrap; font-size:13px;}
-  /* Visualizations column */
-  .viz{display:flex; flex-direction:column; gap:12px; align-items:center; padding:8px;}
-  .viz canvas{width:100%; max-width:var(--maxVizWidth); border-radius:6px; background:#fff; display:block; }
-  #hemicycle{height:var(--hemicycleHeight); max-height:var(--hemicycleHeight); }
-  #vacantChart{height:var(--barHeight); max-height:var(--barHeight); }
-  .legend{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center;}
-  .legend-item{display:flex; gap:6px; align-items:center; font-size:13px;}
-  .color-box{width:14px; height:14px; border-radius:3px; border:1px solid rgba(0,0,0,0.08);}
-  .note{font-size:13px; color:var(--muted); margin-top:6px;}
-  /* Responsive single-column on small screens */
-  @media (max-width:980px){ .grid{grid-template-columns:1fr} .viz{align-items:stretch} }
+:root{
+  --maxVizWidth:720px;
+  --hemicycleHeight:280px;
+  --barHeight:200px;
+  --uiGap:14px;
+  --muted:#666;
+}
+body{font-family:Arial, sans-serif; margin:20px; background:#f7f9fc; color:#222;}
+h1{margin:0 0 8px} h2{margin:18px 0 8px}
+.panel{background:#fff; padding:12px; border-radius:8px; box-shadow:0 1px 3px rgba(15,15,15,0.04); border:1px solid rgba(0,0,0,0.04); margin-bottom:20px;}
+table{width:100%; border-collapse:collapse; margin-top:6px;}
+th, td{padding:6px 8px; border:1px solid #e6e9ef; font-size:13px; vertical-align:middle;}
+input[type="number"], input[type="text"]{padding:6px; width:100%; box-sizing:border-box;}
+input[type="color"]{height:32px; width:48px; padding:0;border:0; background:transparent; cursor:pointer;}
+button{padding:8px 10px; border-radius:6px; border:1px solid #cfcfcf; background:#f0f0f0; cursor:pointer;}
+button.primary{background:#2d6cdf;color:#fff;border-color:#2a63d6;}
+.controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; align-items:center}
+pre#results{max-height:300px; overflow:auto; background:#fcfcff; padding:10px; border-radius:6px; border:1px solid #e7e9ef; white-space:pre-wrap; font-size:13px;}
+.viz{display:flex; flex-direction:column; gap:12px; align-items:center; padding:8px;}
+.viz canvas{width:100%; max-width:var(--maxVizWidth); border-radius:6px; background:#fff; display:block;}
+#hemicycle{height:var(--hemicycleHeight);}
+#vacantChart{height:var(--barHeight);}
+.legend{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center;}
+.legend-item{display:flex; gap:6px; align-items:center; font-size:13px;}
+.color-box{width:14px; height:14px; border-radius:3px; border:1px solid rgba(0,0,0,0.08);}
+.note{font-size:13px; color:var(--muted); margin-top:6px;}
+@media (max-width:980px){ .grid{grid-template-columns:1fr} .viz{align-items:stretch} }
+.grid{display:grid; grid-template-columns:1fr 420px; gap:18px; align-items:start;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h1>National Council Seat Allocator (Advanced)</h1>
+<h1>National Council Seat Allocator (Advanced)</h1>
+<div class="grid">
+  <div class="panel">
+    <h2>Party List Results</h2>
+    <table id="houseTable">
+      <thead><tr><th>Party Name</th><th>Votes</th><th>Color</th><th>Action</th></tr></thead>
+      <tbody id="houseBody">
+        <tr><td><input value="Reclaim"></td><td><input type="number" value="6"></td><td><input type="color" value="#d62728"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Purple Crown"></td><td><input type="number" value="5"></td><td><input type="color" value="#9467bd"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Social Democratic"></td><td><input type="number" value="4"></td><td><input type="color" value="#2ca02c"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Solarist"></td><td><input type="number" value="3"></td><td><input type="color" value="#ff7f0e"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Progressive"></td><td><input type="number" value="2"></td><td><input type="color" value="#1f77b4"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+      </tbody>
+    </table>
+    <button onclick="addHouseRow()">+ Add Party</button>
 
-  <div class="grid">
-    <!-- left: inputs + results -->
-    <div class="panel">
-      <h2>Party List Results</h2>
-      <table id="houseTable" aria-label="Party list results">
-        <thead>
-          <tr><th>Party Name</th><th>Votes</th><th>Color</th><th>Action</th></tr>
-        </thead>
-        <tbody id="houseBody">
-          <tr>
-            <td><input type="text" value="Reclaim"></td>
-            <td><input type="number" value="6" min="0"></td>
-            <td><input type="color" value="#d62728"></td>
-            <td><button onclick="deleteRow(this)">Delete</button></td>
-          </tr>
-          <tr>
-            <td><input type="text" value="Purple Crown"></td>
-            <td><input type="number" value="5" min="0"></td>
-            <td><input type="color" value="#9467bd"></td>
-            <td><button onclick="deleteRow(this)">Delete</button></td>
-          </tr>
-          <tr>
-            <td><input type="text" value="Social Democratic"></td>
-            <td><input type="number" value="4" min="0"></td>
-            <td><input type="color" value="#2ca02c"></td>
-            <td><button onclick="deleteRow(this)">Delete</button></td>
-          </tr>
-          <tr>
-            <td><input type="text" value="Solarist"></td>
-            <td><input type="number" value="3" min="0"></td>
-            <td><input type="color" value="#ff7f0e"></td>
-            <td><button onclick="deleteRow(this)">Delete</button></td>
-          </tr>
-          <tr>
-            <td><input type="text" value="Progressive"></td>
-            <td><input type="number" value="2" min="0"></td>
-            <td><input type="color" value="#1f77b4"></td>
-            <td><button onclick="deleteRow(this)">Delete</button></td>
-          </tr>
-        </tbody>
-      </table>
-      <div style="margin-top:8px">
-        <button onclick="addHouseRow()">+ Add Party</button>
-      </div>
+    <h2 style="margin-top:16px">Party Lists (Candidates)</h2>
+    <table id="partyListTable">
+      <thead><tr><th>Party Name</th><th>Candidate Names (comma-separated)</th><th>Action</th></tr></thead>
+      <tbody id="partyListBody">
+        <tr><td><input value="Reclaim"></td><td><input value="Josef, John Louis"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Purple Crown"></td><td><input value="Cierna"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Social Democratic"></td><td><input value="Dreamersk"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Solarist"></td><td><input value="Hiro Solarist"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+        <tr><td><input value="Progressive"></td><td><input value="Michael Brain"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+      </tbody>
+    </table>
+    <button onclick="addPartyListRow()">+ Add Party</button>
 
-      <h2 style="margin-top:16px">Party Lists (Candidates)</h2>
-      <table id="partyListTable" aria-label="Party candidate lists">
-        <thead>
-          <tr><th>Party Name</th><th>Candidate Names (comma-separated)</th><th>Action</th></tr>
-        </thead>
-        <tbody id="partyListBody">
-          <tr><td><input type="text" value="Reclaim"></td><td><input type="text" value="Josef, John Louis"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-          <tr><td><input type="text" value="Purple Crown"></td><td><input type="text" value="Cierna"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-          <tr><td><input type="text" value="Social Democratic"></td><td><input type="text" value="Dreamersk"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-          <tr><td><input type="text" value="Solarist"></td><td><input type="text" value="Hiro Solarist"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-          <tr><td><input type="text" value="Progressive"></td><td><input type="text" value="Michael Brain"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-        </tbody>
-      </table>
-      <div style="margin-top:8px">
-        <button onclick="addPartyListRow()">+ Add Party</button>
-      </div>
-
-      <h2 style="margin-top:16px">Settings</h2>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <label>Required Vacant Seats:
-          <input type="number" id="requiredVacant" value="5" min="0">
-        </label>
-
-        <label>Maximum Total Seats:
-          <input type="number" id="maxSeats" value="150" min="1">
-        </label>
-
-        <label>Threshold (% of votes required):
-          <input type="number" id="threshold" value="0" min="0" max="100">
-        </label>
-
-        <div class="controls">
-          <button class="primary" onclick="allocateSeats()">Allocate Seats</button>
-          <button onclick="exportCSV()">Export CSV</button>
-        </div>
-      </div>
-
-      <h2 style="margin-top:16px">Results</h2>
-      <pre id="results">Run allocation to see results here.</pre>
+    <h2 style="margin-top:16px">Settings</h2>
+    <label>Required Vacant Seats: <input type="number" id="requiredVacant" value="5" min="0"></label><br>
+    <label>Maximum Total Seats: <input type="number" id="maxSeats" value="150" min="1"></label><br>
+    <label>Threshold (% of votes required): <input type="number" id="threshold" value="0" min="0" max="100"></label><br>
+    <div class="controls">
+      <button class="primary" onclick="allocateSeats()">Allocate Seats</button>
+      <button onclick="exportCSV()">Export CSV</button>
     </div>
 
-    <!-- right: visualizations -->
-    <div class="panel viz">
-      <h2 style="margin:6px 0">Visualizations</h2>
-
-      <canvas id="hemicycle" data-height="280" aria-label="Parliamentary seating chart"></canvas>
-      <div id="legend" class="legend" aria-hidden="false"></div>
-      <div class="note" id="viz-note"></div>
-
-      <canvas id="vacantChart" aria-label="Vacant vs Occupied per party"></canvas>
-    </div>
+    <h2 style="margin-top:16px">Results</h2>
+    <pre id="results">Run allocation to see results here.</pre>
   </div>
 
+  <div class="panel viz">
+    <h2>Visualizations</h2>
+    <canvas id="hemicycle" data-height="280"></canvas>
+    <div id="legend" class="legend"></div>
+    <div class="note" id="viz-note"></div>
+    <canvas id="vacantChart"></canvas>
+  </div>
+</div>
+
 <script>
-/* -------------------------
-   UI helpers (table rows)
-   ------------------------- */
-function deleteRow(button){ button.closest('tr').remove(); }
+/* Table helpers */
+function deleteRow(b){b.closest('tr').remove();}
 function addHouseRow(){
-  const tbody = document.getElementById('houseBody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input type="text"></td><td><input type="number" min="0"></td><td><input type="color" value="#888888"></td><td><button onclick="deleteRow(this)">Delete</button></td>`;
+  const tbody=document.getElementById('houseBody');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input></td><td><input type="number" min="0"></td><td><input type="color" value="#888888"></td><td><button onclick="deleteRow(this)">Delete</button></td>`;
   tbody.appendChild(tr);
 }
 function addPartyListRow(){
-  const tbody = document.getElementById('partyListBody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input type="text"></td><td><input type="text"></td><td><button onclick="deleteRow(this)">Delete</button></td>`;
+  const tbody=document.getElementById('partyListBody');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input></td><td><input></td><td><button onclick="deleteRow(this)">Delete</button></td>`;
   tbody.appendChild(tr);
 }
 
-/* -------------------------
-   Allocation + visuals
-   ------------------------- */
-let vacantChart = null;
-
+/* Charts */
+let vacantChart=null;
 function allocateSeats(){
-  // Read parties preserving input order
-  const houseResults = {};
-  const partyColors = {};
-  const partyOrder = [];
-  let totalVotes = 0;
+  const houseResults={}, partyColors={}, partyOrder=[], partyLists={};
+  let totalVotes=0;
 
-  document.querySelectorAll('#houseTable tbody tr').forEach(row=>{
-    const inputs = row.querySelectorAll('input');
-    const party = inputs[0].value.trim();
-    const votes = parseInt(inputs[1].value) || 0;
-    const color = inputs[2].value || '#888888';
-    if(party){
-      houseResults[party] = votes;
-      partyColors[party] = color;
-      partyOrder.push(party);
-      totalVotes += votes;
-    }
+  document.querySelectorAll('#houseTable tbody tr').forEach(r=>{
+    const inputs=r.querySelectorAll('input');
+    const party=inputs[0].value.trim(), votes=parseInt(inputs[1].value)||0, color=inputs[2].value||'#888888';
+    if(party){houseResults[party]=votes; partyColors[party]=color; partyOrder.push(party); totalVotes+=votes;}
   });
 
-  const threshold = parseFloat(document.getElementById('threshold').value) || 0;
-  const requiredVacantSeats = parseInt(document.getElementById('requiredVacant').value) || 0;
-  const maxSeats = parseInt(document.getElementById('maxSeats').value) || 1000;
-
-  // candidate lists
-  const partyLists = {};
-  document.querySelectorAll('#partyListTable tbody tr').forEach(row=>{
-    const inputs = row.querySelectorAll('input');
-    const party = inputs[0].value.trim();
-    if(party){
-      const listStr = inputs[1].value || '';
-      partyLists[party] = listStr.split(',').map(s=>s.trim()).filter(Boolean);
-    }
+  document.querySelectorAll('#partyListTable tbody tr').forEach(r=>{
+    const inputs=r.querySelectorAll('input'); const party=inputs[0].value.trim();
+    if(party) partyLists[party]=inputs[1].value.split(',').map(s=>s.trim()).filter(Boolean);
   });
 
-  // Filter by threshold and initialise counters
-  const councilParties = [];
-  const councilSeats = {};
-  const occupiedByParty = {};
-  const vacantByParty = {};
+  const threshold=parseFloat(document.getElementById('threshold').value)||0;
+  const requiredVacant=parseInt(document.getElementById('requiredVacant').value)||0;
+  const maxSeats=parseInt(document.getElementById('maxSeats').value)||1000;
 
-  for(const party of partyOrder){
-    if(totalVotes > 0 && (houseResults[party] / totalVotes * 100) < threshold){
-      // skip party (below threshold)
-      continue;
-    }
-    councilParties.push(party);
-    councilSeats[party] = 0;
-    occupiedByParty[party] = 0;
-    vacantByParty[party] = 0;
+  const councilParties=[], councilSeats={}, occupiedByParty={}, vacantByParty={};
+  for(const p of partyOrder){
+    if(totalVotes>0 && (houseResults[p]/totalVotes*100)<threshold) continue;
+    councilParties.push(p); councilSeats[p]=0; occupiedByParty[p]=0; vacantByParty[p]=0;
+  }
+  if(councilParties.length===0){document.getElementById('results').textContent='No parties meet threshold.'; clearHemicycle(); clearVacantChart(); document.getElementById('legend').innerHTML=''; document.getElementById('viz-note').textContent=''; return;}
+
+  function nextCandidate(p){return partyLists[p]&&partyLists[p].length?partyLists[p].shift():null;}
+  let seatAssignments=[], assignedSeats=0, vacantSeats=0, occupiedSeats=0;
+
+  while(vacantSeats<requiredVacant && assignedSeats<maxSeats){
+    let maxQ=-Infinity, nextP=councilParties[0];
+    for(const p of councilParties){const q=(houseResults[p]||0)/(councilSeats[p]+1); if(q>maxQ){maxQ=q; nextP=p;}}
+    const cand=nextCandidate(nextP); assignedSeats++; councilSeats[nextP]++;
+    if(cand){seatAssignments.push([assignedSeats,nextP,cand]); occupiedSeats++; occupiedByParty[nextP]++;} 
+    else{seatAssignments.push([assignedSeats,nextP,'VACANT']); vacantSeats++; vacantByParty[nextP]++;}
   }
 
-  // safety: if no parties remain, show message and stop
-  if(councilParties.length === 0){
-    document.getElementById('results').textContent = 'No parties meet the threshold — adjust inputs.';
-    clearHemicycle();
-    clearVacantChart();
-    document.getElementById('legend').innerHTML = '';
-    document.getElementById('viz-note').textContent = '';
-    return;
-  }
+  let nextInLine='N/A';
+  if(assignedSeats<maxSeats){let maxQ=-Infinity; for(const p of councilParties){const q=(houseResults[p]||0)/(councilSeats[p]+1); if(q>maxQ){maxQ=q; nextInLine=p;}}}
 
-  function getNextCandidate(party){
-    return partyLists[party] && partyLists[party].length ? partyLists[party].shift() : null;
-  }
+  let output='National Council Seat Assignments:\n';
+  for(const [num,party,member] of seatAssignments) output+=`Seat ${num}: ${party} → ${member}\n`;
+  output+='\nSeat Totals (including vacant seats):\n'; for(const p of councilParties) output+=`${p}: ${councilSeats[p]}\n`;
+  output+='\nOccupied Seats by Party:\n'; for(const p of councilParties) output+=`${p}: ${occupiedByParty[p]}\n`;
+  output+='\nVacant Seats by Party:\n'; for(const p of councilParties) output+=`${p}: ${vacantByParty[p]}\n`;
+  output+=`Total Occupied Seats: ${occupiedSeats}\nTotal Vacant Seats: ${vacantSeats}\nTotal Seats Assigned: ${assignedSeats}\n`;
+  output+=`\n📌 Next Party in Line: ${nextInLine}`;
+  document.getElementById('results').textContent=output;
 
-  // Allocation loop: tie-breaking follows councilParties insertion order (first-in gets tie)
-  let seatAssignments = [];
-  let assignedSeats = 0, vacantSeats = 0, occupiedSeats = 0;
-
-  while(vacantSeats < requiredVacantSeats && assignedSeats < maxSeats){
-    // compute quotients in insertion order
-    let maxQ = -Infinity;
-    let nextParty = councilParties[0];
-    for(const party of councilParties){
-      const q = (houseResults[party] || 0) / (councilSeats[party] + 1);
-      if(q > maxQ){
-        maxQ = q;
-        nextParty = party;
-      }
-    }
-
-    const candidate = getNextCandidate(nextParty);
-    assignedSeats++;
-    councilSeats[nextParty]++;
-
-    if(candidate){
-      seatAssignments.push([assignedSeats, nextParty, candidate]);
-      occupiedSeats++;
-      occupiedByParty[nextParty]++;
-    } else {
-      seatAssignments.push([assignedSeats, nextParty, 'VACANT']);
-      vacantSeats++;
-      vacantByParty[nextParty]++;
-    }
-  }
-
-  // Determine next in line if allocation stopped before reaching maxSeats
-  let nextInLineParty = 'N/A';
-  if(assignedSeats < maxSeats){
-    let maxQ = -Infinity;
-    for(const party of councilParties){
-      const q = (houseResults[party] || 0) / (councilSeats[party] + 1);
-      if(q > maxQ){ maxQ = q; nextInLineParty = party; }
-    }
-  }
-
-  // Prepare text results & notes
-  let output = 'National Council Seat Assignments:\\n';
-  for(const [num, party, member] of seatAssignments){
-    output += `Seat ${num}: ${party} → ${member}\\n`;
-  }
-  output += '\\nSeat Totals (including vacant seats):\\n';
-  for(const p of councilParties) output += `${p}: ${councilSeats[p]}\\n`;
-  output += '\\nOccupied Seats by Party:\\n';
-  for(const p of councilParties) output += `${p}: ${occupiedByParty[p]}\\n`;
-  output += '\\nVacant Seats by Party:\\n';
-  for(const p of councilParties) output += `${p}: ${vacantByParty[p]}\\n`;
-  output += `\\nTotal Occupied Seats: ${occupiedSeats}\\n`;
-  output += `Total Vacant Seats: ${vacantSeats}\\n`;
-  output += `Total Seats Assigned: ${assignedSeats}\\n`;
-  output += `\\n📌 Next Party in Line for a Seat: ${nextInLineParty}\\n`;
-
-  // Add informative notes
-  const notes = [];
-  if(assignedSeats >= maxSeats && vacantSeats < requiredVacantSeats){
-    notes.push('Stopped early because the maximum seats limit was reached.');
-  }
-  if(vacantSeats >= requiredVacantSeats){
-    notes.push('Reached required number of vacant seats.');
-  }
-  const noteText = notes.join(' ');
-  if(noteText) output += `\\nNOTE: ${noteText}\\n`;
-
-  document.getElementById('results').textContent = output;
-
-  // Build seatColors grouped largest->smallest
-  const sorted = Object.entries(councilSeats).sort((a,b)=>b[1]-a[1]); // [ [party, count], ... ]
-  const seatColors = [];
-  const legendItems = [];
-  for(const [party,count] of sorted){
-    if(count <= 0) continue;
-    legendItems.push({party, color: partyColors[party] || '#888888', count});
-    for(let i=0;i<count;i++) seatColors.push(partyColors[party] || '#888888');
-  }
-
-  // Draw hemicycle
-  drawHemicycle(seatColors, sorted);
-
-  // Draw legend
-  renderLegend(legendItems);
-
-  // Draw vacant vs occupied stacked bar (per party order)
+  drawHemicycleOccupied(seatAssignments, partyColors);
   drawVacantChart(councilParties, occupiedByParty, vacantByParty, partyColors);
-
-  // small viz status
-  document.getElementById('viz-note').textContent = `Seats drawn: ${assignedSeats} — grouped largest → smallest.`;
+  renderLegend(Object.entries(occupiedByParty).sort((a,b)=>b[1]-a[1]).map(([p,c])=>({party:p,color:partyColors[p]||'#888',count:c})));
+  document.getElementById('viz-note').textContent=`Seats drawn: ${occupiedSeats} — grouped largest → smallest.`;
 }
 
-/* -------------------------
-   Hemicycle drawing routine
-   ------------------------- */
-function clearHemicycle(){
-  const canvas = document.getElementById('hemicycle');
-  const ctx = canvas.getContext('2d');
-  const DPR = window.devicePixelRatio || 1;
-  canvas.width = canvas.clientWidth * DPR;
-  canvas.height = (parseInt(canvas.getAttribute('data-height'))||280) * DPR;
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.clearRect(0,0,canvas.clientWidth, canvas.clientHeight);
-  ctx.fillStyle = '#666';
-  ctx.textAlign = 'center';
-  ctx.fillText('No seats to display', canvas.clientWidth/2, canvas.clientHeight/2);
-}
+function drawHemicycleOccupied(seatAssignments, partyColors){
+  const canvas=document.getElementById('hemicycle'); const ctx=canvas.getContext('2d'); const DPR=window.devicePixelRatio||1;
+  const cssW=canvas.clientWidth; const cssH=parseInt(canvas.getAttribute('data-height'))||280;
+  canvas.width=cssW*DPR; canvas.height=cssH*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,cssW,cssH);
 
-function drawHemicycle(seatColors, sortedPairs){
-  const canvas = document.getElementById('hemicycle');
-  const ctx = canvas.getContext('2d');
-  const DPR = window.devicePixelRatio || 1;
-  const cssW = canvas.clientWidth;
-  const cssH = parseInt(canvas.getAttribute('data-height')) || 280;
-  canvas.width = cssW * DPR;
-  canvas.height = cssH * DPR;
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.clearRect(0,0,cssW, cssH);
+  const occupiedSeats=seatAssignments.filter(([n,p,m])=>m!=='VACANT');
+  if(occupiedSeats.length===0){ctx.fillStyle='#666'; ctx.textAlign='center'; ctx.font='14px sans-serif'; ctx.fillText('No occupied seats to display',cssW/2,cssH/2); return;}
 
-  if(!seatColors || seatColors.length === 0){
-    ctx.fillStyle = '#666';
-    ctx.textAlign = 'center';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('No seats to display', cssW/2, cssH/2);
-    return;
-  }
+  const partyCounts={}; for(const [n,p,m] of occupiedSeats){partyCounts[p]=partyCounts[p]||0; partyCounts[p]++;}
+  const sortedParties=Object.entries(partyCounts).sort((a,b)=>b[1]-a[1]);
+  const seatsByParty=[]; sortedParties.forEach(([p,c])=>{for(let i=0;i<c;i++) seatsByParty.push({party:p});});
 
-  const totalSeats = seatColors.length;
+  const totalSeats=seatsByParty.length; const rows=Math.min(Math.ceil(Math.sqrt(totalSeats)),12);
+  const radiusMargin=12; const outerRadius=Math.min(cssW/2-radiusMargin, cssH*0.95);
+  const innerRadius=Math.max(22,outerRadius*0.18); const seatSpacing=(outerRadius-innerRadius)/(rows-1);
+  const seatRadius=Math.max(4,Math.min(10,seatSpacing*0.45)); const cx=cssW/2; const cy=cssH*1.05;
 
-  // rows: prefer at least 3, but scale with seats
-  let rows = Math.max(3, Math.round(Math.sqrt(totalSeats)));
-  rows = Math.min(rows, 12); // cap rows to avoid too many rows
-  // compute weights so outer rows have more seats
-  const weights = [];
-  let sumW = 0;
-  for(let r=1;r<=rows;r++){
-    const w = Math.pow(r, 1.6); weights.push(w); sumW += w;
-  }
-  let seatsPerRow = weights.map(w => Math.max(1, Math.round(w / sumW * totalSeats)));
-  // normalize to totalSeats
-  let ssum = seatsPerRow.reduce((a,b)=>a+b,0);
-  let i = seatsPerRow.length - 1;
-  while(ssum < totalSeats){ seatsPerRow[i]++; ssum++; i = (i-1+seatsPerRow.length)%seatsPerRow.length; }
-  i = seatsPerRow.length - 1;
-  while(ssum > totalSeats){ if(seatsPerRow[i] > 1){ seatsPerRow[i]--; ssum--; } i = (i-1+seatsPerRow.length)%seatsPerRow.length; }
-
-  // geometry
-  const cx = cssW / 2;
-  const cy = cssH * 1.05; // center slightly below canvas to make semicircle
-  const margin = 12;
-  const outerRadius = Math.min(cssW / 2 - margin, cssH * 0.95);
-  const innerRadius = Math.max(22, outerRadius * 0.18);
-  const seatSpacing = (outerRadius - innerRadius) / Math.max(1, rows - 1);
-  const seatRadius = Math.max(4, Math.min(10, seatSpacing * 0.45));
-
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-
-  // iterate rows from inner (front) to outer (back)
-  let seatIndex = 0;
-  for(let rowIndex = 0; rowIndex < seatsPerRow.length; rowIndex++){
-    const n = seatsPerRow[rowIndex];
-    const radius = innerRadius + rowIndex * seatSpacing;
-    // compute angles across a semicircle (from PI to 0)
-    const startA = Math.PI;
-    const endA = 0;
-    for(let j=0;j<n;j++){
-      if(seatIndex >= totalSeats) break;
-      const angle = startA + (j + 0.5) * (endA - startA) / n;
-      const x = cx + Math.cos(angle) * radius;
-      const y = cy - Math.sin(angle) * radius;
-      // draw seat (circle)
-      ctx.beginPath();
-      ctx.arc(x, y, seatRadius, 0, Math.PI*2);
-      ctx.fillStyle = seatColors[seatIndex] || '#888';
-      ctx.fill();
-      ctx.stroke();
+  let seatIndex=0;
+  for(let r=0;r<rows;r++){
+    const radius=innerRadius+r*seatSpacing;
+    const seatsInRow=Math.ceil(seatsByParty.length/(rows-r));
+    for(let i=0;i<seatsInRow;i++){
+      if(seatIndex>=seatsByParty.length) break;
+      const angle=Math.PI-i*Math.PI/seatsInRow+Math.PI/(2*seatsInRow);
+      const x=cx+Math.cos(angle)*radius; const y=cy-Math.sin(angle)*radius;
+      ctx.beginPath(); ctx.arc(x,y,seatRadius,0,Math.PI*2); ctx.fillStyle=partyColors[seatsByParty[seatIndex].party]||'#888'; ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.stroke();
       seatIndex++;
     }
   }
-
-  // subtle outline for stage (flat base)
-  ctx.beginPath();
-  ctx.moveTo(margin, cy - innerRadius - seatRadius*1.5);
-  ctx.lineTo(cssW - margin, cy - innerRadius - seatRadius*1.5);
-  ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(radiusMargin,cy-innerRadius-seatRadius*1.5); ctx.lineTo(cssW-radiusMargin,cy-innerRadius-seatRadius*1.5); ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.stroke();
 }
 
-/* -------------------------
-   Legend rendering
-   ------------------------- */
 function renderLegend(items){
-  const wrap = document.getElementById('legend');
-  wrap.innerHTML = '';
-  if(!items || items.length === 0) return;
-  items.forEach(it=>{
-    const el = document.createElement('div'); el.className = 'legend-item';
-    el.innerHTML = `<span class="color-box" style="background:${it.color};"></span><strong style="font-size:13px">${it.party}</strong> <span style="color:var(--muted); margin-left:6px">(${it.count})</span>`;
+  const wrap=document.getElementById('legend'); wrap.innerHTML='';
+  if(!items) return; items.forEach(it=>{
+    const el=document.createElement('div'); el.className='legend-item';
+    el.innerHTML=`<span class="color-box" style="background:${it.color}"></span><strong>${it.party}</strong> <span style="color:#666">(${it.count})</span>`;
     wrap.appendChild(el);
   });
 }
 
-/* -------------------------
-   Vacant vs Occupied Chart (Chart.js)
-   ------------------------- */
-function clearVacantChart(){
-  if(vacantChart){ vacantChart.destroy(); vacantChart = null; }
-}
-function drawVacantChart(labels, occupiedByParty, vacantByParty, partyColors){
-  // labels: array of party names (in insertion order)
-  const labs = labels.slice();
-  const occupiedData = labs.map(p=>occupiedByParty[p] || 0);
-  const vacantData = labs.map(p=>vacantByParty[p] || 0);
-  const occupiedColors = labs.map(p=>partyColors[p] || '#4caf50');
-  const vacantColors = labs.map(()=> '#d3d3d3');
+function clearHemicycle(){const c=document.getElementById('hemicycle');const ctx=c.getContext('2d');ctx.clearRect(0,0,c.clientWidth,c.clientHeight);}
+function clearVacantChart(){if(vacantChart){vacantChart.destroy(); vacantChart=null;}}
 
-  const ctx = document.getElementById('vacantChart').getContext('2d');
+function drawVacantChart(labels, occupiedByParty, vacantByParty, partyColors){
+  const labs=labels.slice(), occupied=labs.map(p=>occupiedByParty[p]||0), vacant=labs.map(p=>vacantByParty[p]||0);
+  const occupiedColors=labs.map(p=>partyColors[p]||'#4caf50'); const vacantColors=labs.map(()=> '#d3d3d3');
+  const ctx=document.getElementById('vacantChart').getContext('2d');
   if(vacantChart) vacantChart.destroy();
-  vacantChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labs,
-      datasets: [
-        { label: 'Occupied', data: occupiedData, backgroundColor: occupiedColors, stack: 'stack1' },
-        { label: 'Vacant',   data: vacantData,   backgroundColor: vacantColors,   stack: 'stack1' }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'top' } },
-      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
-    }
+  vacantChart=new Chart(ctx,{
+    type:'bar',
+    data:{labels:labs,datasets:[{label:'Occupied',data:occupied,backgroundColor:occupiedColors,stack:'stack1'},{label:'Vacant',data:vacant,backgroundColor:vacantColors,stack:'stack1'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}}
   });
 }
 
-/* -------------------------
-   CSV Export
-   ------------------------- */
 function exportCSV(){
-  const text = document.getElementById('results').textContent || '';
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'allocation_results.txt';
-  a.click();
+  const text=document.getElementById('results').textContent||'';
+  const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='allocation_results.txt'; a.click();
 }
 
-/* Initialize blank hemicycle */
 clearHemicycle();
 </script>
 </body>
