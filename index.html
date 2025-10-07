@@ -161,7 +161,7 @@ function allocateSeats(){
   drawSeatGrid(seatAssignments, assignedSeats);
 }
 
-// --- Seat Grid Renderer with wrapping and font scaling ---
+// --- Seat Grid Renderer with proper wrapping and scaling ---
 function drawSeatGrid(seats,totalSeats){
   const canvas=document.getElementById('seatCanvas');
   const ctx=canvas.getContext('2d');
@@ -184,11 +184,19 @@ function drawSeatGrid(seats,totalSeats){
       if(metrics>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else {line=testLine;}
     }
     lines.push(line.trim());
-    // If too many lines, reduce font
+
+    // Calculate font size and line spacing
     let fontSize=10;
-    while(lines.length*fontSize>maxHeight && fontSize>6){fontSize--;}
+    let lineHeight=fontSize*1.2;
+    while(lineHeight*lines.length>maxHeight && fontSize>6){
+      fontSize--;
+      lineHeight=fontSize*1.2;
+    }
     context.font=fontSize+'px Arial';
-    lines.forEach((l,i)=>context.fillText(l,x,y-i*fontSize/2+fontSize/2));
+
+    // Center vertically
+    let startY=y-(lineHeight*(lines.length-1))/2;
+    lines.forEach((l,i)=>context.fillText(l,x,startY+i*lineHeight));
   }
 
   seats.forEach((seat,i)=>{
@@ -207,14 +215,15 @@ function drawSeatGrid(seats,totalSeats){
     ctx.lineWidth=2;
     ctx.strokeRect(x,y,seatSize,seatSize);
 
-    // Seat number
     ctx.fillStyle='#000';
-    ctx.font='10px Arial';
     ctx.textAlign='center';
+
+    // Seat number
+    ctx.font='10px Arial';
     ctx.textBaseline='top';
     ctx.fillText('#'+seat[0],x+seatSize/2,y+2);
 
-    // Candidate name
+    // Candidate or vacant
     ctx.textBaseline='middle';
     ctx.fillStyle='#000';
     const candidateText=isVacant?`${seat[1]} VACANT`:seat[2];
@@ -223,7 +232,7 @@ function drawSeatGrid(seats,totalSeats){
 
   // Legend
   let legendY=rows*(seatSize+padding)+20;
-  let legendX=padding;
+  const legendX=padding;
   ctx.textAlign='left';
   councilPartiesGlobal.forEach(p=>{
     ctx.fillStyle=partyColorsGlobal[p]||'#888';
@@ -254,5 +263,6 @@ function exportCSV(){
   const a=document.createElement('a'); a.href=url; a.download='allocation_results.txt'; a.click();
 }
 </script>
+
 </body>
 </html>
