@@ -15,7 +15,6 @@ button { padding: 6px 10px; border-radius: 6px; border: 1px solid #cfcfcf; backg
 button.primary { background: #2d6cdf; color: #fff; border-color: #2a63d6; }
 .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
 pre#results { max-height: 300px; overflow: auto; background: #fcfcff; padding: 10px; border-radius: 6px; border: 1px solid #e7e9ef; font-size: 13px; white-space: pre-wrap; }
-.chart-container { width: 100%; max-width: 600px; height: 300px; margin-top: 10px; }
 #seatCanvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; }
 </style>
 </head>
@@ -159,7 +158,6 @@ function allocateSeats(){
   output+=`\nTotal Seats Assigned: ${assignedSeats}\n📌 Next Party in Line: ${nextInLine}`;
   document.getElementById('results').textContent=output;
 
-  // Draw the seat grid
   drawSeatGrid(seatAssignments, assignedSeats);
 }
 
@@ -168,38 +166,43 @@ function drawSeatGrid(seats,totalSeats){
   const canvas=document.getElementById('seatCanvas');
   const ctx=canvas.getContext('2d');
 
-  const seatSize=60; // width/height
+  const seatSize=60;
   const padding=10;
   const seatsPerRow=Math.min(10,totalSeats);
   const rows=Math.ceil(totalSeats/seatsPerRow);
   canvas.width=seatsPerRow*(seatSize+padding)+padding;
-  canvas.height=rows*(seatSize+padding)+150; // extra for legend
+  canvas.height=rows*(seatSize+padding)+150;
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.font='12px Arial';
   ctx.textAlign='center';
   ctx.textBaseline='middle';
 
-  // Draw seats
   seats.forEach((seat,i)=>{
     const row=Math.floor(i/seatsPerRow);
     const col=i%seatsPerRow;
     const x=padding+col*(seatSize+padding);
     const y=padding+row*(seatSize+padding);
-    const color=seat[2]==='VACANT'?'#d3d3d3':partyColorsGlobal[seat[1]]||'#888888';
-    ctx.fillStyle=color;
+
+    const partyColor=partyColorsGlobal[seat[1]]||'#888888';
+    const isVacant=seat[2]==='VACANT';
+
+    ctx.fillStyle=isVacant?'#d3d3d3':partyColor;
     ctx.fillRect(x,y,seatSize,seatSize);
-    ctx.strokeStyle='#333';
+
+    ctx.strokeStyle=isVacant?partyColor:'#333';
+    ctx.lineWidth=2;
     ctx.strokeRect(x,y,seatSize,seatSize);
 
-    const text1='#'+seat[0];
-    const text2=seat[2]==='VACANT'?'VACANT':seat[2];
     ctx.fillStyle='#000';
-    ctx.fillText(text1,x+seatSize/2,y+seatSize/3);
-    ctx.fillText(text2,x+seatSize/2,y+seatSize*2/3);
+    ctx.fillText('#'+seat[0],x+seatSize/2,y+seatSize*0.25);
+
+    const candidateText=isVacant?`${seat[1]} VACANT`:seat[2];
+    const maxChars=12;
+    let displayText=candidateText.length>maxChars?candidateText.slice(0,maxChars-1)+'…':candidateText;
+    ctx.fillText(displayText,x+seatSize/2,y+seatSize*0.65);
   });
 
-  // Draw legend
   let legendY=rows*(seatSize+padding)+20;
   let legendX=padding;
   councilPartiesGlobal.forEach(p=>{
@@ -211,7 +214,6 @@ function drawSeatGrid(seats,totalSeats){
     legendY+=25;
   });
 
-  // Next party
   ctx.fillStyle='#000';
   ctx.textAlign='left';
   ctx.fillText(`📌 Next Party in Line: ${nextPartyGlobal}`,padding,legendY+15);
