@@ -106,37 +106,37 @@ function allocateSeats(){
   const councilParties=[], councilSeats={}, occupiedByParty={}, vacantByParty={};
   for(const p of partyOrder){
     const totalPartyVotes=houseResults[p]+(factionVotes[p]?Object.values(factionVotes[p]).reduce((a,b)=>a+b,0):0);
-    if(totalVotes===0 || totalPartyVotes/totalVotes*100>=threshold){councilParties.push(p); councilSeats[p]=0; occupiedByParty[p]=0; vacantByParty[p]=0;}
+    if(totalVotes===0 || totalPartyVotes/totalVotes*100>=threshold){
+      councilParties.push(p); councilSeats[p]=0; occupiedByParty[p]=0; vacantByParty[p]=0;
+    }
   }
 
   // D'Hondt allocation with vacant seats
   const seatAssignments=[]; let assignedSeats=0, vacantSeats=0;
-  function getNextCandidate(p){return partyLists[p]&&partyLists[p].length?partyLists[p].shift():'VACANT';}
   while(vacantSeats<requiredVacantSeats && assignedSeats<maxSeats){
     const quotients={}; for(const p of councilParties) quotients[p]=houseResults[p]/(councilSeats[p]+1);
     const nextParty=Object.keys(quotients).reduce((a,b)=>quotients[a]>quotients[b]?a:b);
-
     councilSeats[nextParty]++; assignedSeats++;
-    // Internal seat distribution
-    const internalCandidates=[]; const totalInternalVotes=(houseResults[nextParty]||0)+(factionVotes[nextParty]?Object.values(factionVotes[nextParty]).reduce((a,b)=>a+b,0):0);
+
+    // --- Internal allocation per seat ---
+    const totalInternalVotes=(houseResults[nextParty]||0)+(factionVotes[nextParty]?Object.values(factionVotes[nextParty]).reduce((a,b)=>a+b,0):0);
+    const allocation={};
     if(totalInternalVotes>0){
-      const allocation={};
-      allocation['Main']=Math.round(councilSeats[nextParty]*(houseResults[nextParty]||0)/totalInternalVotes);
-      if(factionVotes[nextParty]) for(const f in factionVotes[nextParty]) allocation[f]=Math.round(councilSeats[nextParty]*factionVotes[nextParty][f]/totalInternalVotes);
-
-      // Flatten allocation into sequence
-      for(const key in allocation){
-        const seatsToAssign=allocation[key]; let list=(key==='Main')?partyLists[nextParty]:factionLists[nextParty][key]||[]; for(let i=0;i<seatsToAssign;i++){
-          const candidate=list.length?list.shift():'VACANT';
-          internalCandidates.push([nextParty,candidate,key==='Main'?'':key]);
-        }
-      }
+      allocation['Main']=houseResults[nextParty]||0;
+      if(factionVotes[nextParty]) for(const f in factionVotes[nextParty]) allocation[f]=factionVotes[nextParty][f];
     }
-
-    // Pick first available internal candidate for this seat
-    let chosen=['VACANT']; for(const c of internalCandidates){if(!seatAssignments.some(s=>s[2]===c[1])){chosen=[nextParty,c[1],c[2]]; break;}}
-    if(chosen[1]==='VACANT'){vacantSeats++; vacantByParty[nextParty]++;} else{occupiedByParty[nextParty]++;}
-    seatAssignments.push([assignedSeats,chosen[0],chosen[1],chosen[2]]);
+    // Random proportional pick for one seat
+    let rand=Math.random()*totalInternalVotes, selectedList='Main';
+    for(const key in allocation){
+      if(rand<allocation[key]){selectedList=key; break;}
+      rand-=allocation[key];
+    }
+    let candidate;
+    if(selectedList==='Main'){candidate=(partyLists[nextParty]&&partyLists[nextParty].length)?partyLists[nextParty].shift():'VACANT';}
+    else{candidate=(factionLists[nextParty]&&factionLists[nextParty][selectedList]&&factionLists[nextParty][selectedList].length)?factionLists[nextParty][selectedList].shift():'VACANT';}
+    if(!candidate) candidate='VACANT';
+    seatAssignments.push([assignedSeats,nextParty,candidate,selectedList==='Main'?'':selectedList]);
+    if(candidate==='VACANT'){vacantSeats++; vacantByParty[nextParty]++;} else{occupiedByParty[nextParty]++;}
   }
 
   // Next in line
@@ -146,7 +146,7 @@ function allocateSeats(){
   seatAssignmentsGlobal=seatAssignments; councilSeatsGlobal=councilSeats; partyColorsGlobal=partyColors;
   councilPartiesGlobal=councilParties; occupiedByPartyGlobal=occupiedByParty; vacantByPartyGlobal=vacantByParty;
 
-  // Text output
+  // --- Text output ---
   let output='National Council Seat Assignments:\n';
   seatAssignments.forEach(s=>{output+=`Seat ${s[0]}: ${s[1]} → ${s[2]}${s[3]?` (${s[3]})`:''}\n`;});
   output+='\nSeat Totals (including vacant seats):\n'; councilParties.forEach(p=>output+=`${p}: ${councilSeats[p]}\n`);
@@ -157,30 +157,33 @@ function allocateSeats(){
   output+=`Total Seats Assigned: ${assignedSeats}\nNext Party in Line: ${nextPartyGlobal}`;
   document.getElementById('results').textContent=output;
 
+  // --- Draw seat grids ---
   drawSeatGrid(seatAssignmentsGlobal,assignedSeats,'seatCanvas',true);
   drawSortedSeatGrid(seatAssignmentsGlobal,councilSeats,'seatCanvasSorted',true);
 }
 
-// --- Seat grid ---
+// --- Seat grid functions ---
 function drawSeatGrid(seats,totalSeats,canvasId,showLegend){
   const canvas=document.getElementById(canvasId), ctx=canvas.getContext('2d');
-  const seatSize=60, padding=6, seatsPerRow=Math.min(10,totalSeats), rows=Math.ceil(totalSeats/seatsPerRow);
-  canvas.width=seatsPerRow*(seatSize+padding)+padding; canvas.height=rows*(seatSize+padding)+150; ctx.clearRect(0,0,canvas.width,canvas.height);
+  const seatSize=60,padding=6,seatsPerRow=Math.min(10,totalSeats),rows=Math.ceil(totalSeats/seatsPerRow);
+  canvas.width=seatsPerRow*(seatSize+padding)+padding; canvas.height=rows*(seatSize+padding)+150;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   function wrapText(ctx,text,x,y,maxWidth,maxHeight){
-    let words=text.split(' '), lines=[], line='';
+    const words=text.split(' '); const lines=[]; let line='';
     for(let n=0;n<words.length;n++){const testLine=line+words[n]+' '; if(ctx.measureText(testLine).width>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else line=testLine;}
     lines.push(line.trim());
     let fontSize=10,lineHeight=fontSize*1.2;
-    while(lineHeight*lines.length>maxHeight && fontSize>6){fontSize--; lineHeight=fontSize*1.2;} ctx.font=fontSize+'px Arial';
-    let startY=y-(lineHeight*(lines.length-1))/2; lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lineHeight));
+    while(lineHeight*lines.length>maxHeight && fontSize>6){fontSize--; lineHeight=fontSize*1.2;}
+    ctx.font=fontSize+'px Arial'; let startY=y-(lineHeight*(lines.length-1))/2;
+    lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lineHeight));
   }
 
   seats.forEach((seat,i)=>{
     const row=Math.floor(i/seatsPerRow), col=i%seatsPerRow, x=padding+col*(seatSize+padding), y=padding+row*(seatSize+padding);
     const partyColor=partyColorsGlobal[seat[1]]||'#888', isVacant=seat[2]==='VACANT';
     ctx.fillStyle=isVacant?'#d3d3d3':partyColor; ctx.fillRect(x,y,seatSize,seatSize);
-    ctx.strokeStyle=isVacant?partyColor:'#333'; ctx.lineWidth=2; ctx.strokeRect(x,y,seatSize,seatSize);
+    ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.strokeRect(x,y,seatSize,seatSize);
     ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('#'+seat[0],x+seatSize/2,y+2);
     ctx.textBaseline='middle'; wrapText(ctx,isVacant?`${seat[1]} VACANT`:seat[2]+(seat[3]?` (${seat[3]})`:''),x+seatSize/2,y+seatSize/2,seatSize-4,seatSize-18);
   });
@@ -189,8 +192,7 @@ function drawSeatGrid(seats,totalSeats,canvasId,showLegend){
     let startX=padding,startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
     councilPartiesGlobal.forEach(p=>{
       ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='white';
-      ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
+      ctx.fillStyle='white'; ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
       startY+=20;
     });
     ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
@@ -200,27 +202,29 @@ function drawSeatGrid(seats,totalSeats,canvasId,showLegend){
 // Sorted seat grid
 function drawSortedSeatGrid(seats,councilSeats,canvasId,showLegend){
   const canvas=document.getElementById(canvasId), ctx=canvas.getContext('2d');
-  const seatSize=60, padding=6, totalSeats=seats.length, seatsPerRow=Math.min(10,totalSeats), rows=Math.ceil(totalSeats/seatsPerRow);
-  canvas.width=seatsPerRow*(seatSize+padding)+padding; canvas.height=rows*(seatSize+padding)+150; ctx.clearRect(0,0,canvas.width,canvas.height);
+  const seatSize=60,padding=6,totalSeats=seats.length,seatsPerRow=Math.min(10,totalSeats),rows=Math.ceil(totalSeats/seatsPerRow);
+  canvas.width=seatsPerRow*(seatSize+padding)+padding; canvas.height=rows*(seatSize+padding)+150;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   const occupiedSeats=seats.filter(s=>s[2]!=='VACANT'), vacantSeats=seats.filter(s=>s[2]==='VACANT');
-  occupiedSeats.sort((a,b)=>councilSeats[b[1]]-councilSeats[a[1]]||a[1].localeCompare(b[1]));
+  occupiedSeats.sort((a,b)=>councilSeatsGlobal[b[1]]-councilSeatsGlobal[a[1]]||a[1].localeCompare(b[1]));
   const sortedSeats=[...occupiedSeats,...vacantSeats];
 
   function wrapText(ctx,text,x,y,maxWidth,maxHeight){
-    let words=text.split(' '), lines=[], line='';
+    const words=text.split(' '); const lines=[]; let line='';
     for(let n=0;n<words.length;n++){const testLine=line+words[n]+' '; if(ctx.measureText(testLine).width>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else line=testLine;}
     lines.push(line.trim());
     let fontSize=10,lineHeight=fontSize*1.2;
-    while(lineHeight*lines.length>maxHeight && fontSize>6){fontSize--; lineHeight=fontSize*1.2;} ctx.font=fontSize+'px Arial';
-    let startY=y-(lineHeight*(lines.length-1))/2; lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lineHeight));
+    while(lineHeight*lines.length>maxHeight && fontSize>6){fontSize--; lineHeight=fontSize*1.2;}
+    ctx.font=fontSize+'px Arial'; let startY=y-(lineHeight*(lines.length-1))/2;
+    lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lineHeight));
   }
 
   sortedSeats.forEach((seat,i)=>{
     const row=Math.floor(i/seatsPerRow), col=i%seatsPerRow, x=padding+col*(seatSize+padding), y=padding+row*(seatSize+padding);
     const partyColor=partyColorsGlobal[seat[1]]||'#888', isVacant=seat[2]==='VACANT';
     ctx.fillStyle=isVacant?'#d3d3d3':partyColor; ctx.fillRect(x,y,seatSize,seatSize);
-    ctx.strokeStyle=isVacant?partyColor:'#333'; ctx.lineWidth=2; ctx.strokeRect(x,y,seatSize,seatSize);
+    ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.strokeRect(x,y,seatSize,seatSize);
     ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('#'+seat[0],x+seatSize/2,y+2);
     ctx.textBaseline='middle'; wrapText(ctx,isVacant?`${seat[1]} VACANT`:seat[2]+(seat[3]?` (${seat[3]})`:''),x+seatSize/2,y+seatSize/2,seatSize-4,seatSize-18);
   });
@@ -229,15 +233,14 @@ function drawSortedSeatGrid(seats,councilSeats,canvasId,showLegend){
     let startX=padding,startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
     councilPartiesGlobal.forEach(p=>{
       ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='white';
-      ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
+      ctx.fillStyle='white'; ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
       startY+=20;
     });
     ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
   }
 }
 
-// Export
+// --- Export/Download ---
 function exportCSV(){const text=document.getElementById('results').textContent.replace(/\n/g,'\r\n'); const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='allocation_results.txt'; a.click();}
 function downloadSeatImage(){const canvas=document.getElementById('seatCanvas'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='seat_grid.png'; link.click();}
 function downloadSortedSeatImage(){const canvas=document.getElementById('seatCanvasSorted'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='sorted_seat_grid.png'; link.click();}
