@@ -161,7 +161,7 @@ function allocateSeats(){
   drawSeatGrid(seatAssignments, assignedSeats);
 }
 
-// --- Seat Grid Renderer ---
+// --- Seat Grid Renderer with wrapping and font scaling ---
 function drawSeatGrid(seats,totalSeats){
   const canvas=document.getElementById('seatCanvas');
   const ctx=canvas.getContext('2d');
@@ -174,9 +174,22 @@ function drawSeatGrid(seats,totalSeats){
   canvas.height=rows*(seatSize+padding)+150;
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.font='12px Arial';
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
+
+  function wrapTextFit(context,text,x,y,maxWidth,maxHeight){
+    let words=text.split(' ');
+    let lines=[], line='';
+    for(let n=0;n<words.length;n++){
+      const testLine=line+words[n]+' ';
+      const metrics=context.measureText(testLine).width;
+      if(metrics>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else {line=testLine;}
+    }
+    lines.push(line.trim());
+    // If too many lines, reduce font
+    let fontSize=10;
+    while(lines.length*fontSize>maxHeight && fontSize>6){fontSize--;}
+    context.font=fontSize+'px Arial';
+    lines.forEach((l,i)=>context.fillText(l,x,y-i*fontSize/2+fontSize/2));
+  }
 
   seats.forEach((seat,i)=>{
     const row=Math.floor(i/seatsPerRow);
@@ -194,28 +207,33 @@ function drawSeatGrid(seats,totalSeats){
     ctx.lineWidth=2;
     ctx.strokeRect(x,y,seatSize,seatSize);
 
+    // Seat number
     ctx.fillStyle='#000';
-    ctx.fillText('#'+seat[0],x+seatSize/2,y+seatSize*0.25);
+    ctx.font='10px Arial';
+    ctx.textAlign='center';
+    ctx.textBaseline='top';
+    ctx.fillText('#'+seat[0],x+seatSize/2,y+2);
 
+    // Candidate name
+    ctx.textBaseline='middle';
+    ctx.fillStyle='#000';
     const candidateText=isVacant?`${seat[1]} VACANT`:seat[2];
-    const maxChars=12;
-    let displayText=candidateText.length>maxChars?candidateText.slice(0,maxChars-1)+'…':candidateText;
-    ctx.fillText(displayText,x+seatSize/2,y+seatSize*0.65);
+    wrapTextFit(ctx,candidateText,x+seatSize/2,y+seatSize/2,seatSize-4,seatSize-18);
   });
 
+  // Legend
   let legendY=rows*(seatSize+padding)+20;
   let legendX=padding;
+  ctx.textAlign='left';
   councilPartiesGlobal.forEach(p=>{
     ctx.fillStyle=partyColorsGlobal[p]||'#888';
     ctx.fillRect(legendX,legendY,20,20);
     ctx.fillStyle='#000';
-    ctx.textAlign='left';
     ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied / ${vacantByPartyGlobal[p]} vacant`,legendX+25,legendY+10);
     legendY+=25;
   });
 
   ctx.fillStyle='#000';
-  ctx.textAlign='left';
   ctx.fillText(`📌 Next Party in Line: ${nextPartyGlobal}`,padding,legendY+15);
 }
 
