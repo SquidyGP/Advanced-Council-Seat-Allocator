@@ -15,7 +15,7 @@ button { padding: 6px 10px; border-radius: 6px; border: 1px solid #cfcfcf; backg
 button.primary { background: #2d6cdf; color: #fff; border-color: #2a63d6; }
 .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
 pre#results { max-height: 300px; overflow: auto; background: #fcfcff; padding: 10px; border-radius: 6px; border: 1px solid #e7e9ef; font-size: 13px; white-space: pre-wrap; }
-canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; }
+canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: transparent; }
 </style>
 </head>
 <body>
@@ -26,11 +26,11 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; }
 <table id="houseTable">
 <thead><tr><th>Party Name</th><th>Votes</th><th>Color</th><th>Action</th></tr></thead>
 <tbody id="houseBody">
-<tr><td><input type="text" value="Reclaim"></td><td><input type="number" value="6"></td><td><input type="color" value="#d62728"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Purple Crown"></td><td><input type="number" value="5"></td><td><input type="color" value="#9467bd"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Social Democratic"></td><td><input type="number" value="4"></td><td><input type="color" value="#2ca02c"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Solarist"></td><td><input type="number" value="3"></td><td><input type="color" value="#ff7f0e"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Progressive"></td><td><input type="number" value="2"></td><td><input type="color" value="#1f77b4"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Reclaim"></td><td><input type="number" value="6"></td><td><input type="color" value="#00ffff"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Purple Crown"></td><td><input type="number" value="5"></td><td><input type="color" value="#800080"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Social Democratic"></td><td><input type="number" value="4"></td><td><input type="color" value="#ff0000"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Solarist"></td><td><input type="number" value="3"></td><td><input type="color" value="#ffff00"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Progressive"></td><td><input type="number" value="2"></td><td><input type="color" value="#ff69b4"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
 </tbody>
 </table>
 <button onclick="addHouseRow()">+ Add Party</button>
@@ -39,10 +39,10 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; }
 <table id="partyListTable">
 <thead><tr><th>Party Name</th><th>Candidate Names (comma-separated)</th><th>Action</th></tr></thead>
 <tbody id="partyListBody">
-<tr><td><input type="text" value="Reclaim"></td><td><input type="text" value="Josef, John Louis"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Purple Crown"></td><td><input type="text" value="Cierna"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Social Democratic"></td><td><input type="text" value="Dreamersk"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Solarist"></td><td><input type="text" value="Hiro Solarist"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Reclaim"></td><td><input type="text" value="Josef, Bela Andrassy, Janek Komiga, John Louis Mormon, Robert Fico"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Purple Crown"></td><td><input type="text" value="Cierna, Oldrich Vladislav, Schwarz, Katereinna Eliska Piotrowski"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Social Democratic"></td><td><input type="text" value="Dubovy Sedliak, Jakub Mazar, Filip Kozákhvi- ezdoslaviç, Staunch, Sigmaiusasin"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+<tr><td><input type="text" value="Solarist"></td><td><input type="text" value="Hiro Solarist, Circa"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
 <tr><td><input type="text" value="Progressive"></td><td><input type="text" value="Michael Brain"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
 </tbody>
 </table>
@@ -51,7 +51,8 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; }
 <h2>Settings</h2>
 <label>Required Vacant Seats: <input type="number" id="requiredVacant" value="5" min="0"></label><br>
 <label>Maximum Total Seats: <input type="number" id="maxSeats" value="150" min="1"></label><br>
-<label>Threshold (% votes required): <input type="number" id="threshold" value="0" min="0" max="100"></label><br>
+<label>Threshold (% votes required): <input type="number" id="threshold" value="5" min="0" max="100"></label><br>
+
 <div class="controls">
   <button class="primary" onclick="allocateSeats()">Allocate Seats</button>
   <button onclick="exportCSV()">Export CSV</button>
@@ -65,7 +66,7 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; }
 <h2>Original Seat Grid</h2>
 <canvas id="seatCanvas"></canvas>
 
-<h2>Sorted Seat Grid (Largest Party to Smallest, Vacants Last)</h2>
+<h2>Sorted Seat Grid (Largest Party → Smallest, Vacants Last)</h2>
 <canvas id="seatCanvasSorted"></canvas>
 
 <script>
@@ -132,8 +133,7 @@ function drawSeatGrid(seats,totalSeats,canvasId, showLegend=false){
   canvas.width=seatsPerRow*(seatSize+padding)+padding; canvas.height=rows*(seatSize+padding)+150; ctx.clearRect(0,0,canvas.width,canvas.height);
 
   function wrapTextFit(context,text,x,y,maxWidth,maxHeight){
-    let words=text.split(' '); let lines=[], line=''; for(let n=0;n<words.length;n++){const testLine=line+words[n]+' '; if(context.measureText(testLine).width>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else line=testLine;}
-    lines.push(line.trim());
+    let words=text.split(' '); let lines=[], line=''; for(let n=0;n<words.length;n++){const testLine=line+words[n]+' '; if(context.measureText(testLine).width>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else line=testLine;} lines.push(line.trim());
     let fontSize=10; let lineHeight=fontSize*1.2; while(lineHeight*lines.length>maxHeight && fontSize>6){fontSize--; lineHeight=fontSize*1.2;}
     context.font=fontSize+'px Arial'; let startY=y-(lineHeight*(lines.length-1))/2; lines.forEach((l,i)=>context.fillText(l,x,startY+i*lineHeight));
   }
@@ -152,10 +152,11 @@ function drawSeatGrid(seats,totalSeats,canvasId, showLegend=false){
     let startX=padding; let startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
     councilPartiesGlobal.forEach(p=>{
       ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='#000'; ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
+      ctx.fillStyle='white'; // legend text white
+      ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
       startY+=20;
     });
-    ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
+    ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
   }
 }
 
@@ -190,18 +191,17 @@ function drawSortedSeatGrid(seats,councilSeats,canvasId,showLegend=false){
     let startX=padding; let startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
     councilPartiesGlobal.forEach(p=>{
       ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='#000'; ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
+      ctx.fillStyle='white'; // legend text white
+      ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
       startY+=20;
     });
-    ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
+    ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
   }
 }
 
 // --- Download ---
 function downloadSeatImage(){const canvas=document.getElementById('seatCanvas'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='seat_grid.png'; link.click();}
 function downloadSortedSeatImage(){const canvas=document.getElementById('seatCanvasSorted'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='sorted_seat_grid.png'; link.click();}
-
-// --- Export ---
 function exportCSV(){const text=document.getElementById('results').textContent.replace(/\n/g,'\r\n'); const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='allocation_results.txt'; a.click();}
 </script>
 
