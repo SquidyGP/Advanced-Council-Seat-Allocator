@@ -3,247 +3,219 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>National Council Seat Allocator with Factions</title>
+<title>National Council Seat Allocator (with Factions)</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; background: #1e1e2f; color: #fff; }
-h1,h2 { margin: 10px 0; }
-table { width: 100%; border-collapse: collapse; margin-top: 6px; color:#000; background:#fff; }
-th, td { padding: 6px 8px; border: 1px solid #ccc; font-size: 13px; }
-input[type="text"], input[type="number"] { width: 100%; padding: 6px; box-sizing: border-box; }
-input[type="color"] { width: 48px; height: 32px; border: none; cursor: pointer; }
-button { padding: 6px 10px; border-radius: 6px; border: 1px solid #cfcfcf; background: #f0f0f0; cursor: pointer; }
-button.primary { background: #2d6cdf; color: #fff; border-color: #2a63d6; }
-.controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
-pre#results { max-height: 300px; overflow: auto; background: #2a2a3a; padding: 10px; border-radius: 6px; font-size: 13px; white-space: pre-wrap; color:#fff; }
-canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: transparent; }
+body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f9fc; color: #333; }
+h1, h2 { color: #222; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; background: #fff; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+input { width: 100%; padding: 0.4rem; box-sizing: border-box; }
+button { padding: 0.5rem 1rem; font-size: 1rem; margin: 0.2rem 0; cursor: pointer; border-radius: 6px; border: 1px solid #666; background: #eee; }
+button:hover { background: #ddd; }
+.add-row { margin-bottom: 1rem; }
+pre { background: #fff; padding: 1rem; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
+canvas { margin: 1rem 0; max-width: 600px; max-height: 400px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); gap: 5px; margin: 1rem 0; }
+.seat { border: 1px solid #999; border-radius: 4px; padding: 2px; font-size: 11px; text-align: center; overflow: hidden; white-space: normal; word-wrap: break-word; background: #f0f0f0; }
+.legend { margin-top: 1rem; font-size: 14px; }
+.legend span { display: inline-block; margin-right: 10px; }
+.legend-color { display: inline-block; width: 12px; height: 12px; margin-right: 5px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<h1>National Council Seat Allocator with Factions</h1>
+<h1>National Council Seat Allocator (with Factions)</h1>
 
 <h2>Party List Results</h2>
-<table id="houseTable">
-<thead><tr><th>Party Name</th><th>Votes</th><th>Color</th><th>Action</th></tr></thead>
-<tbody id="houseBody">
-<tr><td><input type="text" value="Reclaim"></td><td><input type="number" value="6"></td><td><input type="color" value="#00ffff"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Purple Crown"></td><td><input type="number" value="5"></td><td><input type="color" value="#800080"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Social Democratic"></td><td><input type="number" value="4"></td><td><input type="color" value="#ff0000"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Solarist"></td><td><input type="number" value="3"></td><td><input type="color" value="#ffff00"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Progressive"></td><td><input type="number" value="2"></td><td><input type="color" value="#ff69b4"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-</tbody>
+<table id="partyTable">
+  <thead>
+    <tr><th>Party</th><th>Votes</th><th>Color</th><th>Action</th></tr>
+  </thead>
+  <tbody id="partyBody">
+    <tr><td><input value="Reclaim"></td><td><input type="number" value="6"></td><td><input type="color" value="#00ffff"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Purple Crown"></td><td><input type="number" value="5"></td><td><input type="color" value="#800080"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Social Democratic"></td><td><input type="number" value="4"></td><td><input type="color" value="#ff0000"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Solarist"></td><td><input type="number" value="3"></td><td><input type="color" value="#ffff00"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Progressive"></td><td><input type="number" value="2"></td><td><input type="color" value="#ff69b4"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+  </tbody>
 </table>
-<button onclick="addHouseRow()">+ Add Party</button>
+<button onclick="addPartyRow()">+ Add Party</button>
 
-<h2>Party Lists (Candidates)</h2>
-<table id="partyListTable">
-<thead><tr><th>Party Name</th><th>Candidate Names (comma-separated)</th><th>Action</th></tr></thead>
-<tbody id="partyListBody">
-<tr><td><input type="text" value="Reclaim"></td><td><input type="text" value="Josef, Bela Andrassy, Janek Komiga, John Louis Mormon, Robert Fico"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Purple Crown"></td><td><input type="text" value="Cierna, Oldrich Vladislav, Schwarz, Katereinna Eliska Piotrowski"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Social Democratic"></td><td><input type="text" value="Dubovy Sedliak, Jakub Mazar, Filip Kozákhvi- ezdoslaviç, Staunch, Sigmaiusasin"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Solarist"></td><td><input type="text" value="Hiro Solarist, Circa"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-<tr><td><input type="text" value="Progressive"></td><td><input type="text" value="Michael Brain"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
-</tbody>
+<h2>Candidate Lists</h2>
+<table id="candidateTable">
+  <thead>
+    <tr><th>Party</th><th>Faction (optional)</th><th>Votes</th><th>Candidates (comma-separated)</th><th>Action</th></tr>
+  </thead>
+  <tbody id="candidateBody">
+    <tr><td><input value="Reclaim"></td><td><input></td><td><input type="number" value="0"></td><td><input value="Josef, Bela Andrassy, Janek Komiga, John Louis Mormon, Robert Fico"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Purple Crown"></td><td><input></td><td><input type="number" value="0"></td><td><input value="Cierna, Oldrich Vladislav, Schwarz, Katereinna Eliska Piotrowski"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Social Democratic"></td><td><input></td><td><input type="number" value="0"></td><td><input value="Dubovy Sedliak, Jakub Mazar, Filip Kozákhvi-ezdoslaviç, Staunch, Sigmaiusasin"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Solarist"></td><td><input></td><td><input type="number" value="0"></td><td><input value="Hiro Solarist, Circa"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+    <tr><td><input value="Progressive"></td><td><input></td><td><input type="number" value="0"></td><td><input value="Michael Brain"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+  </tbody>
 </table>
-<button onclick="addPartyListRow()">+ Add Party</button>
-
-<h2>Faction Lists (Optional)</h2>
-<table id="factionTable">
-<thead><tr><th>Party</th><th>Faction Name</th><th>Votes</th><th>Candidate Names</th><th>Action</th></tr></thead>
-<tbody id="factionBody">
-</tbody>
-</table>
-<button onclick="addFactionRow()">+ Add Faction</button>
+<button onclick="addCandidateRow()">+ Add Candidate/Faction</button>
 
 <h2>Settings</h2>
-<label>Required Vacant Seats: <input type="number" id="requiredVacant" value="5" min="0"></label><br>
-<label>Maximum Total Seats: <input type="number" id="maxSeats" value="150" min="1"></label><br>
-<label>Threshold (% votes required): <input type="number" id="threshold" value="5" min="0" max="100"></label><br>
-
-<div class="controls">
-  <button class="primary" onclick="allocateSeats()">Allocate Seats</button>
-  <button onclick="exportCSV()">Export CSV</button>
-  <button onclick="downloadSeatImage()">Download Seat Grid Image</button>
-  <button onclick="downloadSortedSeatImage()">Download Sorted Seat Grid Image</button>
-</div>
+<label>Required Vacant Seats: <input type="number" id="requiredVacant" value="5"></label><br>
+<label>Maximum Seats: <input type="number" id="maxSeats" value="150"></label><br>
+<label>Threshold (%): <input type="number" id="threshold" value="5"></label><br>
+<button onclick="allocateSeats()">Allocate Seats</button>
 
 <h2>Results</h2>
-<pre id="results">Run allocation to see results here.</pre>
+<pre id="results"></pre>
 
-<h2>Original Seat Grid</h2>
-<canvas id="seatCanvas"></canvas>
-
-<h2>Sorted Seat Grid (Largest Party → Smallest, Vacants Last)</h2>
-<canvas id="seatCanvasSorted"></canvas>
+<h2>Seat Grids</h2>
+<div>
+  <h3>Original Order</h3>
+  <div class="grid" id="seatGrid"></div>
+</div>
+<div>
+  <h3>Sorted by Largest Party → Smallest (Vacants Last)</h3>
+  <div class="grid" id="sortedSeatGrid"></div>
+</div>
+<div class="legend" id="legend"></div>
 
 <script>
-// --- Table helpers ---
-function deleteRow(btn){btn.closest('tr').remove();}
-function addHouseRow(){const tr=document.createElement('tr'); tr.innerHTML='<td><input type="text"></td><td><input type="number" min="0"></td><td><input type="color" value="#888888"></td><td><button onclick="deleteRow(this)">Delete</button></td>'; document.getElementById('houseBody').appendChild(tr);}
-function addPartyListRow(){const tr=document.createElement('tr'); tr.innerHTML='<td><input type="text"></td><td><input type="text"></td><td><button onclick="deleteRow(this)">Delete</button></td>'; document.getElementById('partyListBody').appendChild(tr);}
-function addFactionRow(){const tr=document.createElement('tr'); tr.innerHTML='<td><input type="text"></td><td><input type="text"></td><td><input type="number" min="0"></td><td><input type="text"></td><td><button onclick="deleteRow(this)">Delete</button></td>'; document.getElementById('factionBody').appendChild(tr);}
+function deleteRow(btn){ btn.closest('tr').remove(); }
+function addPartyRow(){
+  const r=document.createElement('tr');
+  r.innerHTML=`<td><input></td><td><input type="number"></td><td><input type="color" value="#888888"></td><td><button onclick="deleteRow(this)">Delete</button></td>`;
+  document.getElementById('partyBody').appendChild(r);
+}
+function addCandidateRow(){
+  const r=document.createElement('tr');
+  r.innerHTML=`<td><input></td><td><input></td><td><input type="number"></td><td><input></td><td><button onclick="deleteRow(this)">Delete</button></td>`;
+  document.getElementById('candidateBody').appendChild(r);
+}
 
-// --- Globals ---
-let seatAssignmentsGlobal=[], councilSeatsGlobal={}, partyColorsGlobal={}, councilPartiesGlobal=[], occupiedByPartyGlobal={}, vacantByPartyGlobal={}, nextPartyGlobal='';
-
-// --- Allocation ---
 function allocateSeats(){
-  const houseResults={}, partyColors={}, partyOrder=[]; let totalVotes=0;
-  document.querySelectorAll('#houseTable tbody tr').forEach(r=>{const inputs=r.querySelectorAll('input'); const party=inputs[0].value.trim(); const votes=parseInt(inputs[1].value)||0; const color=inputs[2].value||'#888'; if(party){houseResults[party]=votes; partyColors[party]=color; partyOrder.push(party); totalVotes+=votes;}});
+  const parties={}, colors={};
+  let totalVotes=0;
+
+  document.querySelectorAll('#partyBody tr').forEach(r=>{
+    const [p,v,c]=r.querySelectorAll('input');
+    if(p.value.trim()){
+      parties[p.value.trim()]={votes:parseInt(v.value)||0, factions:{}, candidates:[], seats:0};
+      colors[p.value.trim()]=c.value;
+      totalVotes+=parseInt(v.value)||0;
+    }
+  });
+
+  document.querySelectorAll('#candidateBody tr').forEach(r=>{
+    const [p,f,v,c]=r.querySelectorAll('input');
+    const party=p.value.trim();
+    if(!party||!parties[party]) return;
+    const faction=f.value.trim()||null;
+    const votes=parseInt(v.value)||0;
+    const candidates=c.value.split(',').map(x=>x.trim()).filter(Boolean);
+
+    if(faction){
+      parties[party].factions[faction]={votes,candidates,seats:0};
+      totalVotes+=votes;
+    } else {
+      parties[party].candidates=candidates;
+      parties[party].votes+=votes;
+      totalVotes+=votes;
+    }
+  });
+
   const threshold=parseFloat(document.getElementById('threshold').value)||0;
-  const requiredVacantSeats=parseInt(document.getElementById('requiredVacant').value)||0;
-  const maxSeats=parseInt(document.getElementById('maxSeats').value)||1000;
+  const requiredVacant=parseInt(document.getElementById('requiredVacant').value)||0;
+  const maxSeats=parseInt(document.getElementById('maxSeats').value)||100;
 
-  // Main party lists
-  const partyLists={}; document.querySelectorAll('#partyListTable tbody tr').forEach(r=>{const inputs=r.querySelectorAll('input'); const party=inputs[0].value.trim(); if(party){partyLists[party]=inputs[1].value.split(',').map(s=>s.trim()).filter(Boolean);}});
-
-  // Factions
-  const factionVotes={}, factionLists={};
-  document.querySelectorAll('#factionTable tbody tr').forEach(r=>{const inputs=r.querySelectorAll('input'); const party=inputs[0].value.trim(); const faction=inputs[1].value.trim(); const votes=parseInt(inputs[2].value)||0; const candidates=inputs[3].value.split(',').map(s=>s.trim()).filter(Boolean); if(party && faction){factionVotes[party]=factionVotes[party]||{}; factionVotes[party][faction]=votes; factionLists[party]=factionLists[party]||{}; factionLists[party][faction]=candidates;}});
-
-  // Parties passing threshold
-  const councilParties=[], councilSeats={}, occupiedByParty={}, vacantByParty={};
-  for(const p of partyOrder){
-    const totalPartyVotes=houseResults[p]+(factionVotes[p]?Object.values(factionVotes[p]).reduce((a,b)=>a+b,0):0);
-    if(totalVotes===0 || totalPartyVotes/totalVotes*100>=threshold){
-      councilParties.push(p); councilSeats[p]=0; occupiedByParty[p]=0; vacantByParty[p]=0;
+  // external D'Hondt
+  const councilParties={};
+  for(let p in parties){
+    let sumVotes=parties[p].votes;
+    for(let f in parties[p].factions) sumVotes+=parties[p].factions[f].votes;
+    if(totalVotes>0 && (sumVotes/totalVotes*100)>=threshold){
+      councilParties[p]={votes:sumVotes,seats:0};
     }
   }
 
-  // D'Hondt allocation with vacant seats
-  const seatAssignments=[]; let assignedSeats=0, vacantSeats=0;
-  while(vacantSeats<requiredVacantSeats && assignedSeats<maxSeats){
-    const quotients={}; for(const p of councilParties) quotients[p]=houseResults[p]/(councilSeats[p]+1);
+  let assigned=0,vacant=0;
+  while(vacant<requiredVacant && assigned<maxSeats){
+    let quotients={};
+    for(let p in councilParties){
+      quotients[p]=councilParties[p].votes/(councilParties[p].seats+1);
+    }
     const nextParty=Object.keys(quotients).reduce((a,b)=>quotients[a]>quotients[b]?a:b);
-    councilSeats[nextParty]++; assignedSeats++;
-
-    // --- Internal allocation per seat ---
-    const totalInternalVotes=(houseResults[nextParty]||0)+(factionVotes[nextParty]?Object.values(factionVotes[nextParty]).reduce((a,b)=>a+b,0):0);
-    const allocation={};
-    if(totalInternalVotes>0){
-      allocation['Main']=houseResults[nextParty]||0;
-      if(factionVotes[nextParty]) for(const f in factionVotes[nextParty]) allocation[f]=factionVotes[nextParty][f];
-    }
-    // Random proportional pick for one seat
-    let rand=Math.random()*totalInternalVotes, selectedList='Main';
-    for(const key in allocation){
-      if(rand<allocation[key]){selectedList=key; break;}
-      rand-=allocation[key];
-    }
-    let candidate;
-    if(selectedList==='Main'){candidate=(partyLists[nextParty]&&partyLists[nextParty].length)?partyLists[nextParty].shift():'VACANT';}
-    else{candidate=(factionLists[nextParty]&&factionLists[nextParty][selectedList]&&factionLists[nextParty][selectedList].length)?factionLists[nextParty][selectedList].shift():'VACANT';}
-    if(!candidate) candidate='VACANT';
-    seatAssignments.push([assignedSeats,nextParty,candidate,selectedList==='Main'?'':selectedList]);
-    if(candidate==='VACANT'){vacantSeats++; vacantByParty[nextParty]++;} else{occupiedByParty[nextParty]++;}
+    councilParties[nextParty].seats++;
+    assigned++;
   }
 
-  // Next in line
-  const quotientsNext={}; for(const p of councilParties) quotientsNext[p]=houseResults[p]/(councilSeats[p]+1); nextPartyGlobal=Object.keys(quotientsNext).reduce((a,b)=>quotientsNext[a]>quotientsNext[b]?a:b);
+  // internal allocation of each party's seats to factions + main list
+  let seatAssignments=[];
+  let seatNum=0;
+  for(let p in councilParties){
+    const totalPartyVotes=councilParties[p].votes;
+    const totalSeats=councilParties[p].seats;
 
-  // Save globals
-  seatAssignmentsGlobal=seatAssignments; councilSeatsGlobal=councilSeats; partyColorsGlobal=partyColors;
-  councilPartiesGlobal=councilParties; occupiedByPartyGlobal=occupiedByParty; vacantByPartyGlobal=vacantByParty;
+    // weights
+    const allocations=[];
+    const mainVotes=parties[p].votes;
+    if(mainVotes>0||parties[p].candidates.length){ allocations.push({name:null,votes:mainVotes,candidates:parties[p].candidates}); }
+    for(let f in parties[p].factions){ allocations.push({name:f,votes:parties[p].factions[f].votes,candidates:parties[p].factions[f].candidates}); }
 
-  // --- Text output ---
-  let output='National Council Seat Assignments:\n';
-  seatAssignments.forEach(s=>{output+=`Seat ${s[0]}: ${s[1]} → ${s[2]}${s[3]?` (${s[3]})`:''}\n`;});
-  output+='\nSeat Totals (including vacant seats):\n'; councilParties.forEach(p=>output+=`${p}: ${councilSeats[p]}\n`);
-  output+='\nOccupied Seats by Party:\n'; councilParties.forEach(p=>output+=`${p}: ${occupiedByParty[p]}\n`);
-  output+='\nVacant Seats by Party:\n'; councilParties.forEach(p=>output+=`${p}: ${vacantByParty[p]}\n`);
-  output+=`\nTotal Occupied Seats: ${Object.values(occupiedByParty).reduce((a,b)=>a+b,0)}\n`;
-  output+=`Total Vacant Seats: ${Object.values(vacantByParty).reduce((a,b)=>a+b,0)}\n`;
-  output+=`Total Seats Assigned: ${assignedSeats}\nNext Party in Line: ${nextPartyGlobal}`;
-  document.getElementById('results').textContent=output;
+    // distribute seats proportionally
+    let frac=[];
+    allocations.forEach((a,i)=>{ frac.push({idx:i,score:a.votes/totalPartyVotes,seats:0,rem:0}); });
+    let allocated=0;
+    allocations.forEach(f=>{ f.seats=Math.floor(f.score*totalSeats); allocated+=f.seats; f.rem=f.score*totalSeats-f.seats; });
+    while(allocated<totalSeats){ frac.sort((a,b)=>b.rem-a.rem); frac[0].seats++; allocated++; frac[0].rem=0; }
 
-  // --- Draw seat grids ---
-  drawSeatGrid(seatAssignmentsGlobal,assignedSeats,'seatCanvas',true);
-  drawSortedSeatGrid(seatAssignmentsGlobal,councilSeats,'seatCanvasSorted',true);
-}
-
-// --- Seat grid functions ---
-function drawSeatGrid(seats,totalSeats,canvasId,showLegend){
-  const canvas=document.getElementById(canvasId), ctx=canvas.getContext('2d');
-  const seatSize=60,padding=6,seatsPerRow=Math.min(10,totalSeats),rows=Math.ceil(totalSeats/seatsPerRow);
-  canvas.width=seatsPerRow*(seatSize+padding)+padding; canvas.height=rows*(seatSize+padding)+150;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  function wrapText(ctx,text,x,y,maxWidth,maxHeight){
-    const words=text.split(' '); const lines=[]; let line='';
-    for(let n=0;n<words.length;n++){const testLine=line+words[n]+' '; if(ctx.measureText(testLine).width>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else line=testLine;}
-    lines.push(line.trim());
-    let fontSize=10,lineHeight=fontSize*1.2;
-    while(lineHeight*lines.length>maxHeight && fontSize>6){fontSize--; lineHeight=fontSize*1.2;}
-    ctx.font=fontSize+'px Arial'; let startY=y-(lineHeight*(lines.length-1))/2;
-    lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lineHeight));
+    // assign candidates
+    frac.forEach(f=>{
+      const list=allocations[f.idx];
+      for(let i=0;i<f.seats;i++){
+        seatNum++;
+        let cand=list.candidates.shift()||"VACANT";
+        seatAssignments.push({num:seatNum,party:p,faction:list.name||"Main",candidate:cand});
+      }
+    });
   }
 
-  seats.forEach((seat,i)=>{
-    const row=Math.floor(i/seatsPerRow), col=i%seatsPerRow, x=padding+col*(seatSize+padding), y=padding+row*(seatSize+padding);
-    const partyColor=partyColorsGlobal[seat[1]]||'#888', isVacant=seat[2]==='VACANT';
-    ctx.fillStyle=isVacant?'#d3d3d3':partyColor; ctx.fillRect(x,y,seatSize,seatSize);
-    ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.strokeRect(x,y,seatSize,seatSize);
-    ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('#'+seat[0],x+seatSize/2,y+2);
-    ctx.textBaseline='middle'; wrapText(ctx,isVacant?`${seat[1]} VACANT`:seat[2]+(seat[3]?` (${seat[3]})`:''),x+seatSize/2,y+seatSize/2,seatSize-4,seatSize-18);
+  // Output
+  let out="National Council Seat Assignments:\n";
+  seatAssignments.forEach(s=>{ out+=`Seat ${s.num}: ${s.party} (${s.faction}) → ${s.candidate}\n`; });
+  document.getElementById('results').textContent=out;
+
+  // seat grids
+  const grid=document.getElementById('seatGrid');
+  grid.innerHTML='';
+  seatAssignments.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='seat';
+    d.style.background=colors[s.party];
+    d.textContent=`${s.num}\n${s.candidate}`;
+    grid.appendChild(d);
   });
 
-  if(showLegend){
-    let startX=padding,startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
-    councilPartiesGlobal.forEach(p=>{
-      ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='white'; ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
-      startY+=20;
-    });
-    ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
-  }
-}
-
-// Sorted seat grid
-function drawSortedSeatGrid(seats,councilSeats,canvasId,showLegend){
-  const canvas=document.getElementById(canvasId), ctx=canvas.getContext('2d');
-  const seatSize=60,padding=6,totalSeats=seats.length,seatsPerRow=Math.min(10,totalSeats),rows=Math.ceil(totalSeats/seatsPerRow);
-  canvas.width=seatsPerRow*(seatSize+padding)+padding; canvas.height=rows*(seatSize+padding)+150;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  const occupiedSeats=seats.filter(s=>s[2]!=='VACANT'), vacantSeats=seats.filter(s=>s[2]==='VACANT');
-  occupiedSeats.sort((a,b)=>councilSeatsGlobal[b[1]]-councilSeatsGlobal[a[1]]||a[1].localeCompare(b[1]));
-  const sortedSeats=[...occupiedSeats,...vacantSeats];
-
-  function wrapText(ctx,text,x,y,maxWidth,maxHeight){
-    const words=text.split(' '); const lines=[]; let line='';
-    for(let n=0;n<words.length;n++){const testLine=line+words[n]+' '; if(ctx.measureText(testLine).width>maxWidth && n>0){lines.push(line.trim()); line=words[n]+' ';} else line=testLine;}
-    lines.push(line.trim());
-    let fontSize=10,lineHeight=fontSize*1.2;
-    while(lineHeight*lines.length>maxHeight && fontSize>6){fontSize--; lineHeight=fontSize*1.2;}
-    ctx.font=fontSize+'px Arial'; let startY=y-(lineHeight*(lines.length-1))/2;
-    lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lineHeight));
-  }
-
-  sortedSeats.forEach((seat,i)=>{
-    const row=Math.floor(i/seatsPerRow), col=i%seatsPerRow, x=padding+col*(seatSize+padding), y=padding+row*(seatSize+padding);
-    const partyColor=partyColorsGlobal[seat[1]]||'#888', isVacant=seat[2]==='VACANT';
-    ctx.fillStyle=isVacant?'#d3d3d3':partyColor; ctx.fillRect(x,y,seatSize,seatSize);
-    ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.strokeRect(x,y,seatSize,seatSize);
-    ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('#'+seat[0],x+seatSize/2,y+2);
-    ctx.textBaseline='middle'; wrapText(ctx,isVacant?`${seat[1]} VACANT`:seat[2]+(seat[3]?` (${seat[3]})`:''),x+seatSize/2,y+seatSize/2,seatSize-4,seatSize-18);
+  const sorted=document.getElementById('sortedSeatGrid');
+  sorted.innerHTML='';
+  let sortedSeats=[...seatAssignments].sort((a,b)=>{
+    if(a.party!==b.party){
+      return councilParties[b.party].seats-councilParties[a.party].seats;
+    }
+    if(a.candidate==="VACANT"&&b.candidate!=="VACANT") return 1;
+    if(b.candidate==="VACANT"&&a.candidate!=="VACANT") return -1;
+    return a.num-b.num;
+  });
+  sortedSeats.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='seat';
+    d.style.background=colors[s.party];
+    d.textContent=`${s.num}\n${s.candidate}`;
+    sorted.appendChild(d);
   });
 
-  if(showLegend){
-    let startX=padding,startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
-    councilPartiesGlobal.forEach(p=>{
-      ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='white'; ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
-      startY+=20;
-    });
-    ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
-  }
+  // legend
+  let legendHTML="<b>Legend:</b> ";
+  for(let p in colors){ legendHTML+=`<span><span class="legend-color" style="background:${colors[p]}"></span>${p}</span>`; }
+  document.getElementById('legend').innerHTML=legendHTML;
 }
-
-// --- Export/Download ---
-function exportCSV(){const text=document.getElementById('results').textContent.replace(/\n/g,'\r\n'); const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='allocation_results.txt'; a.click();}
-function downloadSeatImage(){const canvas=document.getElementById('seatCanvas'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='seat_grid.png'; link.click();}
-function downloadSortedSeatImage(){const canvas=document.getElementById('seatCanvasSorted'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='sorted_seat_grid.png'; link.click();}
 </script>
 </body>
 </html>
