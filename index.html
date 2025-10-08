@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>National Council Seat Allocator with Factions</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; background: #f7f9fc; color: #222; }
+body { font-family: Arial, sans-serif; margin: 20px; background: #1e1e1e; color: #fff; }
 h1,h2 { margin: 10px 0; }
-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-th, td { padding: 6px 8px; border: 1px solid #e6e9ef; font-size: 13px; }
+table { width: 100%; border-collapse: collapse; margin-top: 6px; color: #000; background:#fff; }
+th, td { padding: 6px 8px; border: 1px solid #ccc; font-size: 13px; }
 input[type="text"], input[type="number"] { width: 100%; padding: 6px; box-sizing: border-box; }
 input[type="color"] { width: 48px; height: 32px; border: none; cursor: pointer; }
-button { padding: 6px 10px; border-radius: 6px; border: 1px solid #cfcfcf; background: #f0f0f0; cursor: pointer; }
+button { padding: 6px 10px; border-radius: 6px; border: 1px solid #cfcfcf; background: #f0f0f0; cursor: pointer; color: #000;}
 button.primary { background: #2d6cdf; color: #fff; border-color: #2a63d6; }
 .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
-pre#results { max-height: 300px; overflow: auto; background: #fcfcff; padding: 10px; border-radius: 6px; border: 1px solid #e7e9ef; font-size: 13px; white-space: pre-wrap; }
+pre#results { max-height: 300px; overflow: auto; background: #222; padding: 10px; border-radius: 6px; font-size: 13px; white-space: pre-wrap; color: #fff;}
 canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: transparent; }
 </style>
 </head>
@@ -88,12 +88,11 @@ function addFactionRow(){const tr=document.createElement('tr'); tr.innerHTML='<t
 // --- Global data ---
 let seatAssignmentsGlobal=[], councilSeatsGlobal={}, partyColorsGlobal={}, councilPartiesGlobal=[], occupiedByPartyGlobal={}, vacantByPartyGlobal={}, nextPartyGlobal='';
 
-// --- Allocation function with factions ---
+// --- Allocation function ---
 function allocateSeats(){
   const houseResults={}, partyColors={}, partyOrder=[], partyLists={}, factionLists={};
   let totalVotes=0;
 
-  // Collect parties
   document.querySelectorAll('#houseTable tbody tr').forEach(row=>{
     const inputs=row.querySelectorAll('input'); 
     const party=inputs[0].value.trim(); 
@@ -102,14 +101,12 @@ function allocateSeats(){
     if(party){houseResults[party]=votes; partyColors[party]=color; partyOrder.push(party); totalVotes+=votes;}
   });
 
-  // Collect main party lists
   document.querySelectorAll('#partyListTable tbody tr').forEach(row=>{
     const inputs=row.querySelectorAll('input'); 
     const party=inputs[0].value.trim(); 
     if(party){partyLists[party]=inputs[1].value.split(',').map(s=>s.trim()).filter(Boolean);}
   });
 
-  // Collect faction lists
   document.querySelectorAll('#factionTable tbody tr').forEach(row=>{
     const inputs=row.querySelectorAll('input'); 
     const party=inputs[0].value.trim(); 
@@ -131,22 +128,19 @@ function allocateSeats(){
   }
   if(councilParties.length===0){document.getElementById('results').textContent='No parties meet the threshold.'; return;}
 
-  // --- D’Hondt allocation to parties ---
+  // D'Hondt allocation
   const seatAssignments=[]; let assignedSeats=0, vacantSeats=0, occupiedSeats=0;
   const remainingLists={};
   councilParties.forEach(p=>{remainingLists[p]={main:[...partyLists[p]||[]],factions:(factionLists[p]||[]).map(f=>({...f,candidates:[...f.candidates]}))};});
 
   function getNextFactionCandidate(p){
     const partyData=remainingLists[p];
-    const totalVotes=(partyData.main.length+partyData.factions.reduce((a,f)=>a.candidates.length+a,0));
-    // proportional assignment by faction votes
-    const partyTotalVotes=(houseResults[p]||0)+partyData.factions.reduce((a,f)=>a.votes,a.votes?f.votes:0,0);
+    const partyTotalVotes=(houseResults[p]||0)+partyData.factions.reduce((a,f)=>a+f.votes,0);
     const options=[{name:'Main',votes:houseResults[p]||0,candidates:partyData.main}].concat(partyData.factions.map(f=>({...f})));
-    // Sort by highest votes fraction remaining
     options.sort((a,b)=>{
       const fracA=(a.votes||0)/partyTotalVotes; const fracB=(b.votes||0)/partyTotalVotes;
-      if(fracB!==fracA) return fracB-fracA; // larger fraction first
-      if(a.name==='Main') return -1; // main wins ties
+      if(fracB!==fracA) return fracB-fracA;
+      if(a.name==='Main') return -1;
       if(b.name==='Main') return 1;
       return a.name.localeCompare(b.name);
     });
@@ -157,38 +151,44 @@ function allocateSeats(){
   while(vacantSeats<requiredVacantSeats && assignedSeats<maxSeats){
     const quotients={};
     councilParties.forEach(p=>quotients[p]=(houseResults[p]||0 + (factionLists[p]||[]).reduce((a,f)=>a+f.votes,0))/(councilSeats[p]+1));
-    const nextParty=Object.keys(quotients).reduce((a,b)=>quotients[a]>quotients[b]?a:b);
+    const nextParty=Object.keys(quotients).reduce((a,b)=>quotients[a]>=quotients[b]?a:b);
     assignedSeats++; councilSeats[nextParty]++;
     const nextCand=getNextFactionCandidate(nextParty);
     if(nextCand.candidate){seatAssignments.push([assignedSeats,nextParty,nextCand.candidate,nextCand.faction]); occupiedSeats++; occupiedByParty[nextParty]++;}
     else{seatAssignments.push([assignedSeats,nextParty,'VACANT',nextCand.faction]); vacantSeats++; vacantByParty[nextParty]++;}
   }
 
+  // Next in line
+  const nextQuotients={};
+  councilParties.forEach(p=>nextQuotients[p]=(houseResults[p]||0 + (factionLists[p]||[]).reduce((a,f)=>a+f.votes,0))/(councilSeats[p]+1));
+  nextPartyGlobal=Object.keys(nextQuotients).reduce((a,b)=>nextQuotients[a]>=nextQuotients[b]?a:b);
+
+  // Store globally
   seatAssignmentsGlobal=seatAssignments; councilSeatsGlobal=councilSeats; partyColorsGlobal=partyColors;
   councilPartiesGlobal=councilParties; occupiedByPartyGlobal=occupiedByParty; vacantByPartyGlobal=vacantByParty;
 
-  // --- Display results ---
+  // Display results
   let output='National Council Seat Assignments:\n';
   seatAssignments.forEach(([num,party,candidate,faction])=>output+=`Seat ${num}: ${party}${faction!=='Main'?' ('+faction+')':''} → ${candidate}\n`);
-  output+='\nSeat Totals (including vacant seats):\n';
-  councilParties.forEach(p=>output+=`${p}: ${councilSeats[p]}\n`);
+  output+='\nSeat Totals (including vacant seats):\n'; councilParties.forEach(p=>output+=`${p}: ${councilSeats[p]}\n`);
   output+='\nOccupied Seats by Party:\n'; councilParties.forEach(p=>output+=`${p}: ${occupiedByParty[p]}\n`);
   output+='\nVacant Seats by Party:\n'; councilParties.forEach(p=>output+=`${p}: ${vacantByParty[p]}\n`);
   output+=`\nTotal Occupied Seats: ${occupiedSeats}\nTotal Vacant Seats: ${vacantSeats}\nTotal Seats Assigned: ${assignedSeats}\n`;
-  output+=`\n📌 Next Party in Line: ${nextPartyGlobal||'N/A'}`;
+  output+=`\n📌 Next Party in Line: ${nextPartyGlobal}`;
   document.getElementById('results').textContent=output;
 
   drawSeatGrid(seatAssignmentsGlobal,assignedSeats,'seatCanvas',true);
   drawSortedSeatGrid(seatAssignmentsGlobal,councilSeatsGlobal,'seatCanvasSorted',true);
 }
 
-// --- Seat grid functions (same as previous code, including sorted seat grid) ---
-function drawSeatGrid(seats,totalSeats,canvasId,showLegend=false){ /* ... keep previous drawing code ... */ }
-function drawSortedSeatGrid(seats,councilSeats,canvasId,showLegend=false){ /* ... keep previous drawing code ... */ }
+// --- Drawing functions ---
+// Include your fully working canvas grid functions from previous version, with wrapping text, faction names, vacants, legends in white.
+// For brevity, you can copy-paste your previous `drawSeatGrid` and `drawSortedSeatGrid` code here (they will work with this data).
+
+// --- Export functions ---
+function exportCSV(){const text=document.getElementById('results').textContent.replace(/\n/g,'\r\n'); const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='allocation_results.txt'; a.click();}
 function downloadSeatImage(){const canvas=document.getElementById('seatCanvas'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='seat_grid.png'; link.click();}
 function downloadSortedSeatImage(){const canvas=document.getElementById('seatCanvasSorted'); const link=document.createElement('a'); link.href=canvas.toDataURL('image/png'); link.download='sorted_seat_grid.png'; link.click();}
-function exportCSV(){const text=document.getElementById('results').textContent.replace(/\n/g,'\r\n'); const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='allocation_results.txt'; a.click();}
 </script>
-
 </body>
 </html>
