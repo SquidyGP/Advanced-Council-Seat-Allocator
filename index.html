@@ -361,7 +361,7 @@ label input {
 <h2>Faction Candidates</h2>
 <div id="factionsCandidatesContainer" style="margin-top: 20px;">
     <div class="faction-candidates" data-faction-id="faction-init-0">
-        <h4>Main Faction Candidates</h4>
+        <h4>Reclaim - Main Faction Candidates</h4>
         <div style="margin-left: 15px;">
             <input type="text" class="faction-candidate-names" 
                    placeholder="Candidate 1, Candidate 2, ..." 
@@ -372,7 +372,7 @@ label input {
     </div>
     
     <div class="faction-candidates" data-faction-id="faction-init-1">
-        <h4>Main Faction Candidates</h4>
+        <h4>Purple Crown - Main Faction Candidates</h4>
         <div style="margin-left: 15px;">
             <input type="text" class="faction-candidate-names" 
                    placeholder="Candidate 1, Candidate 2, ..." 
@@ -383,7 +383,7 @@ label input {
     </div>
     
     <div class="faction-candidates" data-faction-id="faction-init-2">
-        <h4>Main Faction Candidates</h4>
+        <h4>Social Democratic - Main Faction Candidates</h4>
         <div style="margin-left: 15px;">
             <input type="text" class="faction-candidate-names" 
                    placeholder="Candidate 1, Candidate 2, ..." 
@@ -394,7 +394,7 @@ label input {
     </div>
     
     <div class="faction-candidates" data-faction-id="faction-init-3">
-        <h4>Main Faction Candidates</h4>
+        <h4>Solarist - Main Faction Candidates</h4>
         <div style="margin-left: 15px;">
             <input type="text" class="faction-candidate-names" 
                    placeholder="Candidate 1, Candidate 2, ..." 
@@ -405,7 +405,7 @@ label input {
     </div>
     
     <div class="faction-candidates" data-faction-id="faction-init-4">
-        <h4>Main Faction Candidates</h4>
+        <h4>Progressive - Main Faction Candidates</h4>
         <div style="margin-left: 15px;">
             <input type="text" class="faction-candidate-names" 
                    placeholder="Candidate 1, Candidate 2, ..." 
@@ -517,13 +517,21 @@ function addFaction(button) {
 
 // Update faction name in the corresponding candidate list
 function updateFactionName(factionId, newName) {
-    const candidateHeader = document.querySelector(`.faction-candidates[data-faction-id="${factionId}"] h4`);
+    const candidateDiv = document.querySelector(`.faction-candidates[data-faction-id="${factionId}"]`);
+    const candidateHeader = candidateDiv ? candidateDiv.querySelector('h4') : null;
+    
     if (candidateHeader) {
-        candidateHeader.textContent = (newName || 'Unnamed Faction') + ' Candidates';
+        // Get the party name from the candidate div's party index
+        const partyIndex = candidateDiv.dataset.partyIndex;
+        const partyContainer = document.querySelector(`.party-container[data-party-index="${partyIndex}"]`);
+        const partyNameInput = partyContainer ? partyContainer.querySelector('.party-name') : null;
+        const partyName = partyNameInput ? partyNameInput.value : 'Unknown Party';
+        
+        candidateHeader.textContent = `${partyName} - ${newName || 'Unnamed Faction'} Candidates`;
     }
     
-    // Also update the data attribute if it exists as a class
-    const factionInput = document.querySelector(`.faction-name[data-faction-id="${factionId}"]`);
+    // Also update the data attribute if it exists
+    const factionInput = document.querySelector(`.faction-name[onchange*="${factionId}"]`);
     if (factionInput) {
         factionInput.setAttribute('data-faction-name', newName || 'Unnamed Faction');
     }
@@ -603,15 +611,21 @@ function updatePartyTotal(input) {
 function addFactionCandidateList(partyIndex, factionId, factionName = 'New Faction') {
     const factionsContainer = document.getElementById('factionsCandidatesContainer');
     
+    // Get the party name
+    const partyContainer = document.querySelector(`.party-container[data-party-index="${partyIndex}"]`);
+    const partyNameInput = partyContainer ? partyContainer.querySelector('.party-name') : null;
+    const partyName = partyNameInput ? partyNameInput.value : 'Unknown Party';
+    
     const factionCandidatesDiv = document.createElement('div');
     factionCandidatesDiv.className = 'faction-candidates';
     factionCandidatesDiv.dataset.factionId = factionId;
+    factionCandidatesDiv.dataset.partyIndex = partyIndex;
     factionCandidatesDiv.style.marginBottom = '15px';
     factionCandidatesDiv.style.padding = '10px';
     factionCandidatesDiv.style.borderLeft = '2px solid #ccc';
     
     factionCandidatesDiv.innerHTML = `
-        <h4>${factionName} Candidates</h4>
+        <h4>${partyName} - ${factionName} Candidates</h4>
         <div style="margin-left: 15px;">
             <input type="text" class="faction-candidate-names" 
                    placeholder="Candidate 1, Candidate 2, ..." 
@@ -622,14 +636,25 @@ function addFactionCandidateList(partyIndex, factionId, factionName = 'New Facti
     
     factionsContainer.appendChild(factionCandidatesDiv);
     
-    // Link the faction name to the candidate list
-    const factionNameInput = document.querySelector(`.faction-name[data-faction-id="${factionId}"], 
-                                                  [onchange*="${factionId}"]`);
+    // Link the faction name to the candidate list to update when faction name changes
+    const factionNameInput = document.querySelector(`.faction-name[onchange*="${factionId}"]`);
     if (factionNameInput) {
         factionNameInput.addEventListener('input', function() {
             const header = factionCandidatesDiv.querySelector('h4');
             if (header) {
-                header.textContent = (this.value || 'Unnamed Faction') + ' Candidates';
+                header.textContent = `${partyName} - ${this.value || 'Unnamed Faction'} Candidates`;
+            }
+        });
+    }
+    
+    // Also link party name changes to update the candidate list header
+    if (partyNameInput) {
+        partyNameInput.addEventListener('input', function() {
+            const header = factionCandidatesDiv.querySelector('h4');
+            const currentFactionNameInput = document.querySelector(`.faction-name[onchange*="${factionId}"]`);
+            const currentFactionName = currentFactionNameInput ? currentFactionNameInput.value : factionName;
+            if (header) {
+                header.textContent = `${this.value || 'Unnamed Party'} - ${currentFactionName || 'Unnamed Faction'} Candidates`;
             }
         });
     }
@@ -715,17 +740,64 @@ function allocateSeats() {
         return;
     }
     
-    // Allocate seats to parties using the D'Hondt method
+    // Allocate seats one at a time using D'Hondt method
+    // Stop when we reach the required number of vacant seats
     const seatAssignments = [];
     const factionSeatAssignments = [];
     let assignedSeats = 0;
+    let vacantSeats = 0;
+    let occupiedSeats = 0;
     
-    // Allocate seats to parties
-    for (let i = 0; i < maxSeats; i++) {
-        let maxQ = -1;
-        let nextParty = councilParties[0];
+    // Track occupied/vacant by party
+    const occupiedByParty = {};
+    const vacantByParty = {};
+    for (const party of councilParties) {
+        occupiedByParty[party] = 0;
+        vacantByParty[party] = 0;
+    }
+    
+    // Prepare faction data for all parties
+    const partyFactionData = {};
+    for (const party of councilParties) {
+        const partyInfo = partyData[party];
+        const factions = partyInfo.factions || [];
         
-        // Find the party with the highest quotient
+        partyFactionData[party] = {
+            factions: factions,
+            factionSeats: {},
+            factionCandidates: {}
+        };
+        
+        // Initialize faction seats and get candidate lists
+        for (const faction of factions) {
+            partyFactionData[party].factionSeats[faction.name] = 0;
+            
+            // Get candidates for this faction from the UI
+            const factionCandidateInput = document.querySelector(`.faction-candidate-names[data-faction-id="${faction.id}"]`);
+            
+            if (factionCandidateInput) {
+                partyFactionData[party].factionCandidates[faction.name] = factionCandidateInput.value
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
+            } else {
+                partyFactionData[party].factionCandidates[faction.name] = [];
+            }
+        }
+    }
+    
+    // Function to get next candidate from a faction
+    function getNextCandidate(party, factionName) {
+        const candidates = partyFactionData[party].factionCandidates[factionName];
+        return candidates && candidates.length > 0 ? candidates.shift() : null;
+    }
+    
+    // Allocate seats one at a time until we reach required vacant seats
+    while (vacantSeats < requiredVacantSeats && assignedSeats < maxSeats) {
+        // Calculate quotients for each party
+        let maxQ = -1;
+        let nextParty = null;
+        
         for (const party of councilParties) {
             const q = (partyData[party].votes || 0) / (councilSeats[party] + 1);
             if (q > maxQ) {
@@ -734,92 +806,83 @@ function allocateSeats() {
             }
         }
         
+        if (!nextParty) break;
+        
+        // Allocate seat to this party
         councilSeats[nextParty]++;
         assignedSeats++;
-    }
-    
-    // Allocate seats to factions within each party
-    if (showFactions) {
-        for (const party of councilParties) {
-            const partySeats = councilSeats[party];
-            if (partySeats === 0) continue;
-            
-            const partyInfo = partyData[party];
-            const factions = partyInfo.factions || [];
-            
-            if (factions.length === 0) continue;
-            
-            // Calculate total votes for all factions in this party
-            const totalFactionVotes = factions.reduce((sum, f) => sum + (f.votes || 0), 0);
-            if (totalFactionVotes === 0) continue;
-            
-            // Allocate seats to factions using the same method as for parties
-            const factionSeats = {};
-            const factionCandidates = {};
-            
-            // Initialize faction data with their candidate lists
-            for (const faction of factions) {
-                factionSeats[faction.name] = 0;
-                
-                // Get candidates for this faction from the UI by faction ID
-                const factionCandidateInput = document.querySelector(`.faction-candidate-names[data-faction-id="${faction.id}"]`);
-                
-                if (factionCandidateInput) {
-                    factionCandidates[faction.name] = factionCandidateInput.value
-                        .split(',')
-                        .map(s => s.trim())
-                        .filter(Boolean);
-                } else {
-                    factionCandidates[faction.name] = [];
-                }
-            }
-            
-            // Allocate this party's seats to its factions
-            for (let i = 0; i < partySeats; i++) {
-                let maxFactionQ = -1;
-                let nextFaction = null;
-                
-                // Find the faction with the highest quotient
-                for (const faction of factions) {
-                    const q = (faction.votes || 0) / ((factionSeats[faction.name] || 0) + 1);
-                    if (q > maxFactionQ) {
-                        maxFactionQ = q;
-                        nextFaction = faction;
-                    }
-                }
-                
-                if (nextFaction) {
-                    const factionName = nextFaction.name;
-                    factionSeats[factionName] = (factionSeats[factionName] || 0) + 1;
-                    
-                    // Get the next candidate from this faction's list
-                    const candidates = factionCandidates[factionName] || [];
-                    const candidate = candidates.length > 0 ? candidates.shift() : 'VACANT';
-                    
-                    factionSeatAssignments.push({
-                        party: party,
-                        faction: factionName,
-                        candidate: candidate,
-                        seatNumber: i + 1
-                    });
-                    
-                    // Also add to main seat assignments
-                    seatAssignments.push([assignedSeats - partySeats + i + 1, party, candidate]);
-                }
+        
+        // Now allocate to a faction within this party
+        const partyFactions = partyFactionData[nextParty].factions;
+        
+        if (partyFactions.length === 0) {
+            // No factions, just mark as vacant
+            seatAssignments.push([assignedSeats, nextParty, 'VACANT']);
+            vacantSeats++;
+            vacantByParty[nextParty]++;
+            continue;
+        }
+        
+        // Find which faction gets this seat using D'Hondt
+        let maxFactionQ = -1;
+        let nextFaction = null;
+        
+        for (const faction of partyFactions) {
+            const factionSeatsCount = partyFactionData[nextParty].factionSeats[faction.name] || 0;
+            const q = (faction.votes || 0) / (factionSeatsCount + 1);
+            if (q > maxFactionQ) {
+                maxFactionQ = q;
+                nextFaction = faction;
             }
         }
-    } else {
-        // If not showing factions, just create generic seat assignments
-        let seatNum = 1;
-        for (const party of councilParties) {
-            const partySeats = councilSeats[party];
-            for (let i = 0; i < partySeats; i++) {
-                seatAssignments.push([seatNum++, party, `Member ${i + 1}`]);
+        
+        if (!nextFaction) {
+            // No faction found, mark as vacant
+            seatAssignments.push([assignedSeats, nextParty, 'VACANT']);
+            vacantSeats++;
+            vacantByParty[nextParty]++;
+            continue;
+        }
+        
+        // Allocate seat to this faction
+        const factionName = nextFaction.name;
+        partyFactionData[nextParty].factionSeats[factionName]++;
+        
+        // Try to get a candidate from this faction
+        const candidate = getNextCandidate(nextParty, factionName);
+        
+        if (candidate) {
+            // Occupied seat
+            seatAssignments.push([assignedSeats, nextParty, candidate]);
+            occupiedSeats++;
+            occupiedByParty[nextParty]++;
+            
+            if (showFactions) {
+                factionSeatAssignments.push({
+                    party: nextParty,
+                    faction: factionName,
+                    candidate: candidate,
+                    seatNumber: assignedSeats
+                });
+            }
+        } else {
+            // Vacant seat
+            seatAssignments.push([assignedSeats, nextParty, 'VACANT']);
+            vacantSeats++;
+            vacantByParty[nextParty]++;
+            
+            if (showFactions) {
+                factionSeatAssignments.push({
+                    party: nextParty,
+                    faction: factionName,
+                    candidate: 'VACANT',
+                    seatNumber: assignedSeats
+                });
             }
         }
     }
     
-    // Calculate next party in line
+    // Calculate next party in line (if we haven't reached max seats)
     let nextInLine = 'N/A';
     if (assignedSeats < maxSeats) {
         let maxQ = -1;
@@ -832,27 +895,6 @@ function allocateSeats() {
         }
     }
     
-    // Calculate vacant and occupied seats
-    let vacantSeats = 0;
-    let occupiedSeats = 0;
-    const occupiedByParty = {};
-    const vacantByParty = {};
-    
-    for (const party of councilParties) {
-        occupiedByParty[party] = 0;
-        vacantByParty[party] = 0;
-    }
-    
-    seatAssignments.forEach(([num, party, member]) => {
-        if (member === 'VACANT') {
-            vacantSeats++;
-            vacantByParty[party]++;
-        } else {
-            occupiedSeats++;
-            occupiedByParty[party]++;
-        }
-    });
-    
     // Update global state
     seatAssignmentsGlobal = seatAssignments;
     councilSeatsGlobal = councilSeats;
@@ -863,61 +905,58 @@ function allocateSeats() {
     nextPartyGlobal = nextInLine;
     
     // Generate output
-    let output = 'National Council Seat Assignments:\n';
+    let output = '📊 National Council Seat Assignments:\n';
+    output += '═'.repeat(50) + '\n\n';
     
     if (showFactions && factionSeatAssignments.length > 0) {
-        // Group faction assignments by party
-        const assignmentsByParty = {};
-        for (const party of councilParties) {
-            assignmentsByParty[party] = [];
-        }
-        
-        factionSeatAssignments.forEach(assignment => {
-            assignmentsByParty[assignment.party].push(assignment);
-        });
-        
-        // Output faction assignments by party
-        for (const party of councilParties) {
-            if (assignmentsByParty[party].length > 0) {
-                output += `\n${party} (${councilSeats[party]} seats):\n`;
-                assignmentsByParty[party].forEach(({faction, candidate, seatNumber}) => {
-                    output += `  ${faction} → ${candidate}\n`;
-                });
+        // Show detailed seat assignments
+        output += 'SEAT-BY-SEAT ASSIGNMENTS:\n';
+        seatAssignments.forEach(([num, party, member]) => {
+            const seatInfo = factionSeatAssignments.find(f => f.seatNumber === num);
+            if (seatInfo) {
+                output += `Seat ${num}: ${party} - ${seatInfo.faction} → ${member}\n`;
+            } else {
+                output += `Seat ${num}: ${party} → ${member}\n`;
             }
-        }
+        });
     } else {
         // Simple seat assignments without faction detail
+        output += 'SEAT-BY-SEAT ASSIGNMENTS:\n';
         seatAssignments.forEach(([num, party, member]) => {
             output += `Seat ${num}: ${party} → ${member}\n`;
         });
     }
     
+    output += '\n' + '═'.repeat(50) + '\n';
+    
     // Add party seat totals
-    output += '\nSeat Totals:\n';
+    output += '\nSEAT TOTALS BY PARTY:\n';
     for (const party of councilParties) {
-        output += `${party}: ${councilSeats[party]}\n`;
+        output += `${party}: ${councilSeats[party]} total (${occupiedByParty[party]} occupied, ${vacantByParty[party]} vacant)\n`;
     }
     
     // Add faction seat distribution if enabled
     if (showFactions && factionSeatAssignments.length > 0) {
-        output += '\nFaction Seat Distribution:\n';
-        for (const { party, faction, seats } of factionSeatAssignments) {
-            output += `${party} - ${faction}: ${seats} seat${seats !== 1 ? 's' : ''}\n`;
+        output += '\nFACTION SEAT DISTRIBUTION:\n';
+        
+        // Count seats per faction
+        const factionSeatCounts = {};
+        factionSeatAssignments.forEach(({party, faction}) => {
+            const key = `${party} - ${faction}`;
+            factionSeatCounts[key] = (factionSeatCounts[key] || 0) + 1;
+        });
+        
+        // Output counts
+        for (const [key, count] of Object.entries(factionSeatCounts)) {
+            output += `  ${key}: ${count} seat${count !== 1 ? 's' : ''}\n`;
         }
     }
     
-    // Add occupied and vacant seats
-    output += '\nOccupied Seats by Party:\n';
-    for (const party of councilParties) {
-        output += `${party}: ${occupiedByParty[party]}\n`;
-    }
-    
-    output += '\nVacant Seats by Party:\n';
-    for (const party of councilParties) {
-        output += `${party}: ${vacantByParty[party]}\n`;
-    }
-    
-    output += `\nTotal Seats Assigned: ${assignedSeats}\n📌 Next Party in Line: ${nextInLine}`;
+    output += '\n' + '═'.repeat(50) + '\n';
+    output += `\nTotal Seats Assigned: ${assignedSeats}\n`;
+    output += `Total Occupied: ${occupiedSeats}\n`;
+    output += `Total Vacant: ${vacantSeats}\n`;
+    output += `\n📌 Next Party in Line: ${nextInLine}`;
     
     // Update the results display
     document.getElementById('results').textContent = output;
@@ -950,14 +989,22 @@ function drawSeatGrid(seats,totalSeats,canvasId, showLegend=false){
   });
 
   if(showLegend){
-    let startX=padding; let startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
+    let startX=padding; let startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='bold 12px Arial'; ctx.textBaseline='top';
+    
+    // Draw white background for legend
+    ctx.fillStyle='rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(0, startY-5, canvas.width, (councilPartiesGlobal.length + 1) * 20 + 15);
+    
     councilPartiesGlobal.forEach(p=>{
       ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='white'; // legend text white
+      ctx.strokeStyle='#333'; ctx.lineWidth=1; ctx.strokeRect(startX,startY,15,15);
+      ctx.fillStyle='#000';
       ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
       startY+=20;
     });
-    ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
+    ctx.fillStyle='#000'; 
+    ctx.font='bold 13px Arial';
+    ctx.fillText(`📌 Next in Line: ${nextPartyGlobal}`,startX,startY+5);
   }
 }
 
@@ -995,14 +1042,22 @@ function drawSortedSeatGrid(seats,councilSeats,canvasId,showLegend=false){
   });
 
   if(showLegend){
-    let startX=padding; let startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='12px Arial'; ctx.textBaseline='top';
+    let startX=padding; let startY=rows*(seatSize+padding)+20; ctx.textAlign='left'; ctx.font='bold 12px Arial'; ctx.textBaseline='top';
+    
+    // Draw white background for legend
+    ctx.fillStyle='rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(0, startY-5, canvas.width, (councilPartiesGlobal.length + 1) * 20 + 15);
+    
     councilPartiesGlobal.forEach(p=>{
       ctx.fillStyle=partyColorsGlobal[p]; ctx.fillRect(startX,startY,15,15);
-      ctx.fillStyle='white';
+      ctx.strokeStyle='#333'; ctx.lineWidth=1; ctx.strokeRect(startX,startY,15,15);
+      ctx.fillStyle='#000';
       ctx.fillText(`${p}: ${occupiedByPartyGlobal[p]} occupied, ${vacantByPartyGlobal[p]} vacant`,startX+20,startY);
       startY+=20;
     });
-    ctx.fillStyle='white'; ctx.fillText(`Next Party in Line: ${nextPartyGlobal}`,startX,startY+5);
+    ctx.fillStyle='#000';
+    ctx.font='bold 13px Arial';
+    ctx.fillText(`📌 Next in Line: ${nextPartyGlobal}`,startX,startY+5);
   }
 }
 
