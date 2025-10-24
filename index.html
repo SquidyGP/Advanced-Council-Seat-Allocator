@@ -5,26 +5,263 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>National Council Seat Allocator with Factions</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; background: #f7f9fc; color: #222; }
-h1,h2,h3 { margin: 10px 0; }
-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-th, td { padding: 6px 8px; border: 1px solid #e6e9ef; font-size: 13px; }
-input[type="text"], input[type="number"] { width: 100%; padding: 6px; box-sizing: border-box; }
-input[type="color"] { width: 48px; height: 32px; border: none; cursor: pointer; }
-button { padding: 6px 10px; border-radius: 6px; border: 1px solid #cfcfcf; background: #f0f0f0; cursor: pointer; }
-button.primary { background: #2d6cdf; color: #fff; border-color: #2a63d6; }
-button.secondary { background: #6c757d; color: #fff; border-color: #5a6268; }
-.controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
-pre#results { max-height: 300px; overflow: auto; background: #fcfcff; padding: 10px; border-radius: 6px; border: 1px solid #e7e9ef; font-size: 13px; white-space: pre-wrap; }
-canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: transparent; }
-.faction-section { margin-left: 20px; margin-bottom: 15px; border-left: 3px solid #e9ecef; padding-left: 15px; }
-.party-header { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
-.party-total { font-weight: bold; margin: 5px 0; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  color: #2d3748;
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+h2 {
+  color: #4a5568;
+  font-size: 1.8em;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+h3 {
+  color: #2d3748;
+  font-size: 1.3em;
+  margin: 15px 0;
+}
+
+h4 {
+  color: #4a5568;
+  font-size: 1.1em;
+  margin: 10px 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 20px;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+table, th, td {
+  border: 1px solid #e2e8f0;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.5px;
+}
+
+tr:nth-child(even) {
+  background-color: #f7fafc;
+}
+
+tr:hover {
+  background-color: #edf2f7;
+}
+
+input[type="text"], input[type="number"] {
+  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus, input[type="number"]:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+input[type="color"] {
+  padding: 2px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 50px;
+  height: 35px;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 5px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+button.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+button.secondary {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+}
+
+button.delete {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: white;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+canvas {
+  border: 2px solid #e2e8f0;
+  margin-top: 15px;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+pre {
+  background-color: #f7fafc;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.controls {
+  margin: 25px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+label {
+  display: inline-block;
+  margin: 10px 15px 10px 0;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+label input {
+  margin-left: 8px;
+}
+
+.party-container {
+  border: 2px solid #e2e8f0;
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 8px;
+  background: linear-gradient(to right, #ffffff 0%, #f7fafc 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s;
+}
+
+.party-container:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.party-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.party-name {
+  flex: 1;
+  min-width: 200px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.party-total {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 15px;
+  font-size: 18px;
+  padding: 10px 15px;
+  background-color: #edf2f7;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.party-votes {
+  color: #667eea;
+  font-size: 20px;
+}
+
+.faction-section {
+  margin-top: 15px;
+}
+
+.faction-candidates {
+  margin-bottom: 20px;
+  padding: 15px;
+  border-left: 4px solid #667eea;
+  background-color: #f7fafc;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.faction-candidates:hover {
+  background-color: #edf2f7;
+}
+
+.faction-candidates h4 {
+  margin-top: 0;
+  color: #667eea;
+}
+
+.faction-candidate-names {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+}
 </style>
 </head>
 <body>
+<div class="container">
 
-<h1>National Council Seat Allocator</h1>
+<h1>🏛️ National Council Seat Allocator</h1>
 
 <h2>Parties and Factions</h2>
 <div id="partiesContainer">
@@ -39,15 +276,14 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: 
     <div class="party-total">Total Votes: <span class="party-votes">0</span></div>
     <div class="faction-section">
       <table class="faction-table">
-        <thead><tr><th>Faction Name</th><th>Votes</th><th>Action</th></tr></thead>
+        <thead><tr><th>Faction Name</th><th>Votes</th><th>Actions</th></tr></thead>
         <tbody>
-          <tr><td><input type="text" class="faction-name" value="Main Faction"></td><td><input type="number" class="faction-votes" value="6" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+          <tr data-faction-id="faction-init-0"><td><input type="text" class="faction-name" value="Main Faction" onchange="updateFactionName('faction-init-0', this.value)"></td><td><input type="number" class="faction-votes" value="6" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="showFactionCandidates('faction-init-0')">Edit Candidates</button><button onclick="deleteFaction(this)">Delete</button></td></tr>
         </tbody>
       </table>
     </div>
   </div>
   
-  <!-- More parties will be added here -->
   <div class="party-container" data-party-index="1">
     <div class="party-header">
       <input type="text" class="party-name" value="Purple Crown" placeholder="Party Name">
@@ -58,13 +294,14 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: 
     <div class="party-total">Total Votes: <span class="party-votes">0</span></div>
     <div class="faction-section">
       <table class="faction-table">
-        <thead><tr><th>Faction Name</th><th>Votes</th><th>Action</th></tr></thead>
+        <thead><tr><th>Faction Name</th><th>Votes</th><th>Actions</th></tr></thead>
         <tbody>
-          <tr><td><input type="text" class="faction-name" value="Main Faction"></td><td><input type="number" class="faction-votes" value="5" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+          <tr data-faction-id="faction-init-1"><td><input type="text" class="faction-name" value="Main Faction" onchange="updateFactionName('faction-init-1', this.value)"></td><td><input type="number" class="faction-votes" value="11" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="showFactionCandidates('faction-init-1')">Edit Candidates</button><button onclick="deleteFaction(this)">Delete</button></td></tr>
         </tbody>
       </table>
     </div>
   </div>
+  
   <div class="party-container" data-party-index="2">
     <div class="party-header">
       <input type="text" class="party-name" value="Social Democratic" placeholder="Party Name">
@@ -75,13 +312,14 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: 
     <div class="party-total">Total Votes: <span class="party-votes">0</span></div>
     <div class="faction-section">
       <table class="faction-table">
-        <thead><tr><th>Faction Name</th><th>Votes</th><th>Action</th></tr></thead>
+        <thead><tr><th>Faction Name</th><th>Votes</th><th>Actions</th></tr></thead>
         <tbody>
-          <tr><td><input type="text" class="faction-name" value="Main Faction"></td><td><input type="number" class="faction-votes" value="4" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+          <tr data-faction-id="faction-init-2"><td><input type="text" class="faction-name" value="Main Faction" onchange="updateFactionName('faction-init-2', this.value)"></td><td><input type="number" class="faction-votes" value="3" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="showFactionCandidates('faction-init-2')">Edit Candidates</button><button onclick="deleteFaction(this)">Delete</button></td></tr>
         </tbody>
       </table>
     </div>
   </div>
+  
   <div class="party-container" data-party-index="3">
     <div class="party-header">
       <input type="text" class="party-name" value="Solarist" placeholder="Party Name">
@@ -92,26 +330,27 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: 
     <div class="party-total">Total Votes: <span class="party-votes">0</span></div>
     <div class="faction-section">
       <table class="faction-table">
-        <thead><tr><th>Faction Name</th><th>Votes</th><th>Action</th></tr></thead>
+        <thead><tr><th>Faction Name</th><th>Votes</th><th>Actions</th></tr></thead>
         <tbody>
-          <tr><td><input type="text" class="faction-name" value="Main Faction"></td><td><input type="number" class="faction-votes" value="3" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+          <tr data-faction-id="faction-init-3"><td><input type="text" class="faction-name" value="Main Faction" onchange="updateFactionName('faction-init-3', this.value)"></td><td><input type="number" class="faction-votes" value="8" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="showFactionCandidates('faction-init-3')">Edit Candidates</button><button onclick="deleteFaction(this)">Delete</button></td></tr>
         </tbody>
       </table>
     </div>
   </div>
+  
   <div class="party-container" data-party-index="4">
     <div class="party-header">
       <input type="text" class="party-name" value="Progressive" placeholder="Party Name">
-      <input type="color" class="party-color" value="#ff69b4">
+      <input type="color" class="party-color" value="#00ff00">
       <button onclick="addFaction(this)" class="secondary">+ Add Faction</button>
       <button onclick="deleteParty(this)" class="delete">Delete Party</button>
     </div>
     <div class="party-total">Total Votes: <span class="party-votes">0</span></div>
     <div class="faction-section">
       <table class="faction-table">
-        <thead><tr><th>Faction Name</th><th>Votes</th><th>Action</th></tr></thead>
+        <thead><tr><th>Faction Name</th><th>Votes</th><th>Actions</th></tr></thead>
         <tbody>
-          <tr><td><input type="text" class="faction-name" value="Main Faction"></td><td><input type="number" class="faction-votes" value="2" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="deleteRow(this)">Delete</button></td></tr>
+          <tr data-faction-id="faction-init-4"><td><input type="text" class="faction-name" value="Main Faction" onchange="updateFactionName('faction-init-4', this.value)"></td><td><input type="number" class="faction-votes" value="2" min="0" onchange="updatePartyTotal(this)"></td><td><button onclick="showFactionCandidates('faction-init-4')">Edit Candidates</button><button onclick="deleteFaction(this)">Delete</button></td></tr>
         </tbody>
       </table>
     </div>
@@ -121,13 +360,67 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: 
 
 <h2>Faction Candidates</h2>
 <div id="factionsCandidatesContainer" style="margin-top: 20px;">
-    <!-- Faction candidate lists will be added here -->
+    <div class="faction-candidates" data-faction-id="faction-init-0">
+        <h4>Main Faction Candidates</h4>
+        <div style="margin-left: 15px;">
+            <input type="text" class="faction-candidate-names" 
+                   placeholder="Candidate 1, Candidate 2, ..." 
+                   data-faction-id="faction-init-0" 
+                   style="width: 100%; padding: 5px;"
+                   value="Josef, Bela Andrassy, Janek Komiga, John Louis Mormon, Robert Fico">
+        </div>
+    </div>
+    
+    <div class="faction-candidates" data-faction-id="faction-init-1">
+        <h4>Main Faction Candidates</h4>
+        <div style="margin-left: 15px;">
+            <input type="text" class="faction-candidate-names" 
+                   placeholder="Candidate 1, Candidate 2, ..." 
+                   data-faction-id="faction-init-1" 
+                   style="width: 100%; padding: 5px;"
+                   value="Cierna, Oldrich Vladislav, Schwarz, Katereinna Eliska Piotrowski">
+        </div>
+    </div>
+    
+    <div class="faction-candidates" data-faction-id="faction-init-2">
+        <h4>Main Faction Candidates</h4>
+        <div style="margin-left: 15px;">
+            <input type="text" class="faction-candidate-names" 
+                   placeholder="Candidate 1, Candidate 2, ..." 
+                   data-faction-id="faction-init-2" 
+                   style="width: 100%; padding: 5px;"
+                   value="Dubovy Sedliak, Jakub Mazar, Filip Kozákhvi-ezdoslaviç, Staunch, Sigmaiusasin">
+        </div>
+    </div>
+    
+    <div class="faction-candidates" data-faction-id="faction-init-3">
+        <h4>Main Faction Candidates</h4>
+        <div style="margin-left: 15px;">
+            <input type="text" class="faction-candidate-names" 
+                   placeholder="Candidate 1, Candidate 2, ..." 
+                   data-faction-id="faction-init-3" 
+                   style="width: 100%; padding: 5px;"
+                   value="Hiro Solarist, Circa">
+        </div>
+    </div>
+    
+    <div class="faction-candidates" data-faction-id="faction-init-4">
+        <h4>Main Faction Candidates</h4>
+        <div style="margin-left: 15px;">
+            <input type="text" class="faction-candidate-names" 
+                   placeholder="Candidate 1, Candidate 2, ..." 
+                   data-faction-id="faction-init-4" 
+                   style="width: 100%; padding: 5px;"
+                   value="Michael Brain">
+        </div>
+    </div>
 </div>
 
 <h2>Settings</h2>
 <label>Required Vacant Seats: <input type="number" id="requiredVacant" value="5" min="0"></label><br>
 <label>Maximum Total Seats: <input type="number" id="maxSeats" value="150" min="1"></label><br>
 <label>Threshold (% votes required): <input type="number" id="threshold" value="5" min="0" max="100"></label><br>
+<label><input type="checkbox" id="showFactions" checked> Show Faction Details in Results</label><br>
 
 <div class="controls">
   <button class="primary" onclick="allocateSeats()">Allocate Seats</button>
@@ -145,6 +438,7 @@ canvas { border:1px solid #ccc; margin-top:10px; border-radius:6px; background: 
 <h2>Sorted Seat Grid (Largest Party → Smallest, Vacants Last)</h2>
 <canvas id="seatCanvasSorted"></canvas>
 
+</div>
 <script>
 // --- Party and Faction Management ---
 let partyCounter = 5; // Start after the initial 5 parties
@@ -376,6 +670,7 @@ function allocateSeats() {
                 
                 if (factionName) {
                     factions.push({
+                        id: row.dataset.factionId || `faction-${Date.now()}-${i}`,
                         name: factionName,
                         votes: factionVotes
                     });
@@ -384,21 +679,11 @@ function allocateSeats() {
             }
         });
         
-        // Get candidates for this party
-        const partyIndex = partyContainer.dataset.partyIndex;
-        const candidateList = document.querySelector(`.candidate-list[data-party-index="${partyIndex}"]`);
-        const candidates = candidateList ? 
-            candidateList.querySelector('.candidate-names').value
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean) : [];
-        
         // Store party data
         partyData[partyName] = {
             votes: partyVotes,
             factions: factions,
-            color: partyColor,
-            candidates: candidates
+            color: partyColor
         };
         
         partyColors[partyName] = partyColor;
@@ -414,8 +699,6 @@ function allocateSeats() {
     // Calculate which parties meet the threshold
     const councilParties = [];
     const councilSeats = {};
-    const occupiedByParty = {};
-    const vacantByParty = {};
     
     for (const party of partyOrder) {
         const partyVotes = partyData[party].votes;
@@ -423,8 +706,6 @@ function allocateSeats() {
         
         councilParties.push(party);
         councilSeats[party] = 0;
-        occupiedByParty[party] = 0;
-        vacantByParty[party] = 0;
     }
     
     if (councilParties.length === 0) {
@@ -434,20 +715,13 @@ function allocateSeats() {
         return;
     }
     
-    // Allocate seats to parties
+    // Allocate seats to parties using the D'Hondt method
     const seatAssignments = [];
+    const factionSeatAssignments = [];
     let assignedSeats = 0;
-    let vacantSeats = 0;
-    let occupiedSeats = 0;
-    
-    // Function to get the next candidate for a party
-    function getNextCandidate(party) {
-        const candidates = [...(partyData[party].candidates || [])];
-        return candidates.length > 0 ? candidates.shift() : null;
-    }
     
     // Allocate seats to parties
-    while (vacantSeats < requiredVacantSeats && assignedSeats < maxSeats) {
+    for (let i = 0; i < maxSeats; i++) {
         let maxQ = -1;
         let nextParty = councilParties[0];
         
@@ -460,37 +734,11 @@ function allocateSeats() {
             }
         }
         
-        // Assign the seat
-        const candidate = getNextCandidate(nextParty);
-        assignedSeats++;
         councilSeats[nextParty]++;
-        
-        if (candidate) {
-            seatAssignments.push([assignedSeats, nextParty, candidate]);
-            occupiedSeats++;
-            occupiedByParty[nextParty]++;
-        } else {
-            seatAssignments.push([assignedSeats, nextParty, 'VACANT']);
-            vacantSeats++;
-            vacantByParty[nextParty]++;
-        }
+        assignedSeats++;
     }
     
-    // Calculate next party in line
-    let nextInLine = 'N/A';
-    if (assignedSeats < maxSeats) {
-        let maxQ = -1;
-        for (const party of councilParties) {
-            const q = (partyData[party].votes || 0) / (councilSeats[party] + 1);
-            if (q > maxQ) {
-                maxQ = q;
-                nextInLine = party;
-            }
-        }
-    }
-    
-    // Allocate seats to factions within each party if enabled
-    const factionSeatAssignments = [];
+    // Allocate seats to factions within each party
     if (showFactions) {
         for (const party of councilParties) {
             const partySeats = councilSeats[party];
@@ -509,29 +757,24 @@ function allocateSeats() {
             const factionSeats = {};
             const factionCandidates = {};
             
-            // Initialize faction data
+            // Initialize faction data with their candidate lists
             for (const faction of factions) {
                 factionSeats[faction.name] = 0;
                 
-                // Get candidates for this faction from the UI
-                const factionCandidateInput = document.querySelector(`.faction-candidate-names[data-faction-id^="${faction.name}"], 
-                                                                 .faction-candidate-names[data-faction-id$="${faction.name}"]`);
+                // Get candidates for this faction from the UI by faction ID
+                const factionCandidateInput = document.querySelector(`.faction-candidate-names[data-faction-id="${faction.id}"]`);
                 
                 if (factionCandidateInput) {
-                    // Use the faction's specific candidates if available
                     factionCandidates[faction.name] = factionCandidateInput.value
                         .split(',')
                         .map(s => s.trim())
                         .filter(Boolean);
                 } else {
-                    // Fall back to party candidates if no faction-specific candidates exist
-                    factionCandidates[faction.name] = [...(partyInfo.candidates || [])];
+                    factionCandidates[faction.name] = [];
                 }
             }
             
-            // Allocate seats to factions
-            const factionSeatAssignments = [];
-            
+            // Allocate this party's seats to its factions
             for (let i = 0; i < partySeats; i++) {
                 let maxFactionQ = -1;
                 let nextFaction = null;
@@ -551,7 +794,7 @@ function allocateSeats() {
                     
                     // Get the next candidate from this faction's list
                     const candidates = factionCandidates[factionName] || [];
-                    const candidate = candidates.length > 0 ? candidates.shift() : `Faction Member ${factionSeats[factionName]}`;
+                    const candidate = candidates.length > 0 ? candidates.shift() : 'VACANT';
                     
                     factionSeatAssignments.push({
                         party: party,
@@ -559,18 +802,56 @@ function allocateSeats() {
                         candidate: candidate,
                         seatNumber: i + 1
                     });
+                    
+                    // Also add to main seat assignments
+                    seatAssignments.push([assignedSeats - partySeats + i + 1, party, candidate]);
                 }
             }
-            
-            // Add detailed faction seat assignments to the output
-            if (factionSeatAssignments.length > 0) {
-                output += `\n${party} Faction Seat Assignments:\n`;
-                factionSeatAssignments.forEach(({faction, candidate, seatNumber}) => {
-                    output += `  Seat ${seatNumber}: ${faction} → ${candidate}\n`;
-                });
+        }
+    } else {
+        // If not showing factions, just create generic seat assignments
+        let seatNum = 1;
+        for (const party of councilParties) {
+            const partySeats = councilSeats[party];
+            for (let i = 0; i < partySeats; i++) {
+                seatAssignments.push([seatNum++, party, `Member ${i + 1}`]);
             }
         }
     }
+    
+    // Calculate next party in line
+    let nextInLine = 'N/A';
+    if (assignedSeats < maxSeats) {
+        let maxQ = -1;
+        for (const party of councilParties) {
+            const q = (partyData[party].votes || 0) / (councilSeats[party] + 1);
+            if (q > maxQ) {
+                maxQ = q;
+                nextInLine = party;
+            }
+        }
+    }
+    
+    // Calculate vacant and occupied seats
+    let vacantSeats = 0;
+    let occupiedSeats = 0;
+    const occupiedByParty = {};
+    const vacantByParty = {};
+    
+    for (const party of councilParties) {
+        occupiedByParty[party] = 0;
+        vacantByParty[party] = 0;
+    }
+    
+    seatAssignments.forEach(([num, party, member]) => {
+        if (member === 'VACANT') {
+            vacantSeats++;
+            vacantByParty[party]++;
+        } else {
+            occupiedSeats++;
+            occupiedByParty[party]++;
+        }
+    });
     
     // Update global state
     seatAssignmentsGlobal = seatAssignments;
@@ -584,13 +865,35 @@ function allocateSeats() {
     // Generate output
     let output = 'National Council Seat Assignments:\n';
     
-    // Add seat assignments
-    seatAssignments.forEach(([num, party, member]) => {
-        output += `Seat ${num}: ${party} → ${member}\n`;
-    });
+    if (showFactions && factionSeatAssignments.length > 0) {
+        // Group faction assignments by party
+        const assignmentsByParty = {};
+        for (const party of councilParties) {
+            assignmentsByParty[party] = [];
+        }
+        
+        factionSeatAssignments.forEach(assignment => {
+            assignmentsByParty[assignment.party].push(assignment);
+        });
+        
+        // Output faction assignments by party
+        for (const party of councilParties) {
+            if (assignmentsByParty[party].length > 0) {
+                output += `\n${party} (${councilSeats[party]} seats):\n`;
+                assignmentsByParty[party].forEach(({faction, candidate, seatNumber}) => {
+                    output += `  ${faction} → ${candidate}\n`;
+                });
+            }
+        }
+    } else {
+        // Simple seat assignments without faction detail
+        seatAssignments.forEach(([num, party, member]) => {
+            output += `Seat ${num}: ${party} → ${member}\n`;
+        });
+    }
     
     // Add party seat totals
-    output += '\nSeat Totals (including vacant seats):\n';
+    output += '\nSeat Totals:\n';
     for (const party of councilParties) {
         output += `${party}: ${councilSeats[party]}\n`;
     }
